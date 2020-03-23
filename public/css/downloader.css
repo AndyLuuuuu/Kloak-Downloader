@@ -1,0 +1,26 @@
+.dlWrapper {
+  padding: 2rem;
+  background-color: ghostwhite;
+  width: 50%;
+}
+
+.button {
+  padding: 0.4rem;
+  border-radius: 5px;
+  background-color: white;
+  border: 1px solid black;
+  cursor: pointer;
+}
+
+.details {
+  margin-top: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  height: 30rem;
+  background-color: white;
+  overflow-y: auto;
+}
+
+.fileprogress {
+  width: 100%;
+  margin-top: 2rem;
+}

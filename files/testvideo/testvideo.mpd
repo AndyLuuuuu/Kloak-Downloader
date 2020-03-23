@@ -1,0 +1,206 @@
+<?xml version="1.0" ?>
+<MPD mediaPresentationDuration="PT3M19.408S" minBufferTime="PT3.00S" profiles="urn:mpeg:dash:profile:isoff-live:2011" type="static" xmlns="urn:mpeg:dash:schema:mpd:2011">
+  <!-- Created with Bento4 mp4-dash.py, VERSION=1.8.0-629 -->
+  <Period>
+    <!-- Video -->
+    <AdaptationSet maxHeight="1080" maxWidth="1920" mimeType="video/mp4" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/seg-$Number$.m4s" startNumber="1" timescale="24000">
+        <SegmentTimeline>
+          <S d="48048"/>
+          <S d="56056"/>
+          <S d="24024"/>
+          <S d="53053"/>
+          <S d="35035"/>
+          <S d="25025"/>
+          <S d="15015"/>
+          <S d="58058"/>
+          <S d="70070"/>
+          <S d="49049"/>
+          <S d="79079"/>
+          <S d="75075"/>
+          <S d="53053"/>
+          <S d="70070"/>
+          <S d="29029" r="1"/>
+          <S d="128128"/>
+          <S d="44044"/>
+          <S d="51051"/>
+          <S d="27027"/>
+          <S d="6006"/>
+          <S d="55055"/>
+          <S d="72072"/>
+          <S d="50050" r="1"/>
+          <S d="29029"/>
+          <S d="27027"/>
+          <S d="66066"/>
+          <S d="28028"/>
+          <S d="7007"/>
+          <S d="28028"/>
+          <S d="47047"/>
+          <S d="38038"/>
+          <S d="15015"/>
+          <S d="31031"/>
+          <S d="78078"/>
+          <S d="45045"/>
+          <S d="49049"/>
+          <S d="37037"/>
+          <S d="73073"/>
+          <S d="55055"/>
+          <S d="37037"/>
+          <S d="63063"/>
+          <S d="28028"/>
+          <S d="26026"/>
+          <S d="102102"/>
+          <S d="46046" r="1"/>
+          <S d="36036"/>
+          <S d="49049"/>
+          <S d="25025"/>
+          <S d="47047"/>
+          <S d="7007"/>
+          <S d="101101"/>
+          <S d="108108"/>
+          <S d="15015"/>
+          <S d="85085"/>
+          <S d="21021"/>
+          <S d="113113"/>
+          <S d="18018"/>
+          <S d="50050"/>
+          <S d="45045"/>
+          <S d="36036"/>
+          <S d="50050"/>
+          <S d="46046"/>
+          <S d="32032"/>
+          <S d="96096"/>
+          <S d="32032"/>
+          <S d="112112"/>
+          <S d="16016"/>
+          <S d="68068"/>
+          <S d="48048"/>
+          <S d="12012"/>
+          <S d="61061"/>
+          <S d="59059"/>
+          <S d="29029"/>
+          <S d="88088"/>
+          <S d="115115"/>
+          <S d="16016"/>
+          <S d="128128"/>
+          <S d="33033"/>
+          <S d="68068" r="1"/>
+          <S d="44044"/>
+          <S d="11011"/>
+          <S d="78078"/>
+          <S d="50050"/>
+          <S d="41041"/>
+          <S d="87087"/>
+          <S d="42042"/>
+          <S d="51051"/>
+          <S d="35035"/>
+          <S d="128128"/>
+          <S d="29029"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation bandwidth="3152196" codecs="avc1.640028" frameRate="24000/1001" height="1080" id="video/avc1" scanType="progressive" width="1920"/>
+    </AdaptationSet>
+    <!-- Audio -->
+    <AdaptationSet lang="en" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/seg-$Number$.m4s" startNumber="1" timescale="44100">
+        <SegmentTimeline>
+          <S d="88064"/>
+          <S d="103424"/>
+          <S d="44032"/>
+          <S d="97280"/>
+          <S d="64512"/>
+          <S d="46080"/>
+          <S d="27648"/>
+          <S d="106496"/>
+          <S d="129024"/>
+          <S d="90112"/>
+          <S d="145408"/>
+          <S d="137216"/>
+          <S d="98304"/>
+          <S d="128000"/>
+          <S d="53248"/>
+          <S d="54272"/>
+          <S d="234496"/>
+          <S d="80896"/>
+          <S d="94208"/>
+          <S d="50176"/>
+          <S d="10240"/>
+          <S d="101376"/>
+          <S d="132096"/>
+          <S d="92160" r="1"/>
+          <S d="53248"/>
+          <S d="50176"/>
+          <S d="120832"/>
+          <S d="52224"/>
+          <S d="12288"/>
+          <S d="51200"/>
+          <S d="87040"/>
+          <S d="69632"/>
+          <S d="27648"/>
+          <S d="57344"/>
+          <S d="143360"/>
+          <S d="82944"/>
+          <S d="90112"/>
+          <S d="67584"/>
+          <S d="134144"/>
+          <S d="101376"/>
+          <S d="67584"/>
+          <S d="116736"/>
+          <S d="51200"/>
+          <S d="48128"/>
+          <S d="187392"/>
+          <S d="83968"/>
+          <S d="84992"/>
+          <S d="66560"/>
+          <S d="90112"/>
+          <S d="46080"/>
+          <S d="86016"/>
+          <S d="13312"/>
+          <S d="185344"/>
+          <S d="198656"/>
+          <S d="27648"/>
+          <S d="156672"/>
+          <S d="37888"/>
+          <S d="207872"/>
+          <S d="33792"/>
+          <S d="92160"/>
+          <S d="81920"/>
+          <S d="66560"/>
+          <S d="92160"/>
+          <S d="83968"/>
+          <S d="59392"/>
+          <S d="176128"/>
+          <S d="59392"/>
+          <S d="205824"/>
+          <S d="29696"/>
+          <S d="124928"/>
+          <S d="88064"/>
+          <S d="22528"/>
+          <S d="111616"/>
+          <S d="108544"/>
+          <S d="53248"/>
+          <S d="161792"/>
+          <S d="211968"/>
+          <S d="29696"/>
+          <S d="235520"/>
+          <S d="60416"/>
+          <S d="124928" r="1"/>
+          <S d="80896"/>
+          <S d="20480"/>
+          <S d="143360"/>
+          <S d="92160"/>
+          <S d="75776"/>
+          <S d="159744"/>
+          <S d="76800"/>
+          <S d="94208"/>
+          <S d="64512"/>
+          <S d="235520"/>
+          <S d="53248"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation audioSamplingRate="44100" bandwidth="129812" codecs="mp4a.40.2" id="audio/en/mp4a">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

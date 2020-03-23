@@ -1,0 +1,30 @@
+doctype html
+html
+  include head.pug
+  body
+    .wrapper
+      
+      .ui#loader.active.dimmer.invisibleHide(style="z-index: 100")
+        .ui.loader.large.text(style="font-size: 1.2rem")="Loading..."
+      video#video.video(preload="metadata")
+      .video_controls
+        .controls_top
+          input#video_seeker.video_seeker(type="range" step=".5" min="0" value="0")
+          p#video_duration.duration="0:00/0:00"
+        .controls_bottom
+          .controls_left
+            button#playpause_btn.controls
+              i.play.icon.inverted(style="margin: 0 0 1.5px 0" class="large")
+            button#volume_btn.controls
+              i.volume.up.icon.inverted(style="margin: 0; margin-bottom: 1.5px" class="large")
+            .volume_control
+              input#video_volume_control.video_volume_control(type="range" step="5" min="0" max="100" data-bind="value: video_volume, event: {change: change_volume}")
+          .controls_right
+            button#quality_btn.controls
+              p.quality_ctl_text="1080p"
+            //- button#fullscreen_btn.controls
+            //-   i.expand.icon.inverted(style="margin: 0; margin-bottom: 1.5px" class="large")
+    a#dl(download="test.mp4")="hello"
+    script(type="text/javascript" src="../js/main.js")
+    script.
+      ko.applyBindings(mainScript);

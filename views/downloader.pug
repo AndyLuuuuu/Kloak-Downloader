@@ -1,0 +1,14 @@
+doctype html
+html
+  include head.pug
+  link(href="../css/downloader.css" rel="stylesheet")
+  body
+    .dlWrapper
+      input#fileInput(type="file")
+      button#filecreate.button="Create download file"
+      button.button(style="margin-left: 1rem;")
+        a#dl(download)="Download file"
+      .details#details
+      progress#fileprogress.fileprogress
+      p#progressMsg.progressMsg
+      script(type="text/javascript" src="../js/test.js")
