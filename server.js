@@ -4,6 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var app = express();
 var PORT = process.env.PORT || 3000;
+var FILE_DIR = __dirname + '/files/';
 app.use(express.static('public'));
 app.use('/files', express.static('files'));
 app.set('view engine', 'pug');
@@ -28,49 +29,35 @@ app.get('/file', function (req, res) {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Headers', '*');
     res.send(base64);
-    // getBase64(__dirname + `/files/testvideo/${path}`, callback)
-    // res.sendFile(__dirname + `/files/testvideo/${path}`)
 });
-app.get('/getfile', function (req, res) {
-    var filename = req.query.filename;
-    var ext = req.query.ext;
-    var size = fs.statSync(__dirname + ("/files/" + filename + "." + ext)).size;
-    if (!size) {
-        res.sendStatus(404);
-    }
-    else {
-        var data = {
-            filename: filename,
-            size: size,
-            ext: ext
-        };
-        res.send(data);
-    }
+app.get('/requestfile', function (req, res) {
+    // console.log(req.query);
+    fs.readdir(FILE_DIR, function (err, files) {
+        files.forEach(function (file) {
+            if (file.includes(req.query.file)) {
+                var extension = file.split('.')[file.split('.').length - 1];
+                var filename = req.query.file;
+                var size = fs.statSync(FILE_DIR + file).size;
+                res.send({ filename: filename, extension: extension, size: size });
+            }
+        });
+    });
 });
 app.get('/download', function (req, res) {
     var filename = req.query.filename;
+    var extension = req.query.extension;
     var chunksize = req.query.chunksize;
-    var ext = req.query.ext;
     var offset = req.query.offset;
     var read = false;
     console.log(offset, chunksize);
     var buffer = Buffer.alloc(Number(chunksize));
-    fs.open(__dirname + ("/files/" + filename + "." + ext), 'r', function (err, fd) {
+    fs.open(__dirname + ("/files/" + filename + "." + extension), 'r', function (err, fd) {
         fs.read(fd, buffer, 0, Number(chunksize), Number(offset), function (err, bytesRead, buffer) {
+            console.log(err);
+            console.log(bytesRead);
             res.send(buffer);
         });
     });
-    // const reader = fs.createReadStream(__dirname + `/files/${filename}.${ext}`, {
-    //   start: Number(offset),
-    //   end: Number(offset) + Number(chunksize)
-    // })
-    // reader.on('data', chunk => {
-    //   if (!read) {
-    //     console.log(chunk)
-    //     res.send(chunk)
-    //     read = true
-    //   }
-    // })
 });
 app.listen(PORT, function () {
     console.log("Kloak Video on PORT " + PORT);

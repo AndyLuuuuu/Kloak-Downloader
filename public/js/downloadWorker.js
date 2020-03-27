@@ -1,46 +1,61 @@
-self.importScripts('jimp.min.js');
-var BASE_DL_URL = 'http://localhost:3000/download?';
-var WORKER_INFO = {
-    id: null,
-    messagePort: null
-};
-function workerMessages(e) {
-    console.log(e.data);
-}
-self.addEventListener('message', function (e) {
-    var cmd = e.data.cmd;
-    var data = e.data.data;
-    console.log(e.data);
-    switch (cmd) {
-        case 'start':
-            WORKER_INFO.id = data.id;
-            WORKER_INFO.messagePort = data.channel;
-            WORKER_INFO.messagePort.onmessage = workerMessages;
-            console.log({
-                message: 'downloadWorker',
-                data: "Download worker ID: " + WORKER_INFO.id + " started up."
+var DownloadWorker = /** @class */ (function () {
+    function DownloadWorker() {
+        var _this = this;
+        this.DEBUG = false;
+        this.init = function () {
+            var workerURL = URL.createObjectURL(new Blob(["(" + _this.workerFn.toString() + ")()"], { type: 'text/javascript' }));
+            _this.worker = new Worker(workerURL);
+            URL.revokeObjectURL(workerURL);
+        };
+        this.workerFn = function () {
+            var BASE_URL = self.location.origin + "/download?";
+            var downloadWorkerInfo = null;
+            importScripts(self.location.origin + "/js/jimp.min.js");
+            var query = function (data) {
+                return Object.keys(data)
+                    .map(function (key) { return (key = key + "=" + data[key]); })
+                    .join('&');
+            };
+            self.addEventListener('message', function (e) {
+                var cmd = e.data.cmd;
+                var data = e.data.data;
+                switch (cmd) {
+                    case 'START':
+                        console.log(data);
+                        downloadWorkerInfo = data;
+                        break;
+                    case 'DOWNLOAD':
+                        fetch("" + BASE_URL + query(data))
+                            .then(function (res) {
+                            return res.arrayBuffer();
+                        })
+                            .then(function (buffer) {
+                            downloadWorkerInfo.channel.postMessage({
+                                cmd: 'SAVE_TO_DATABASE',
+                                data: {
+                                    downloadWorkerID: downloadWorkerInfo.id,
+                                    filename: data.filename,
+                                    extension: data.extension,
+                                    base64: Buffer.from(new Uint8Array(buffer)).toString('base64'),
+                                    offset: data.offset
+                                }
+                            });
+                        });
+                        query(data);
+                        break;
+                    default:
+                        break;
+                }
             });
-            break;
-        case 'download':
-            console.log(data);
-            fetch(BASE_DL_URL + "filename=" + data.filename + "&ext=" + data.ext + "&offset=" + data.offset + "&chunksize=" + data.chunksize)
-                .then(function (res) {
-                return res.arrayBuffer();
-            })
-                .then(function (buff) {
-                WORKER_INFO.messagePort.postMessage({
-                    cmd: 'saveToDB',
-                    data: {
-                        workerid: WORKER_INFO.id,
-                        filename: data.filename,
-                        ext: data.ext,
-                        base64: Buffer.from(new Uint8Array(buff)).toString('base64'),
-                        offset: data.offset
-                    }
-                });
-            });
-            break;
-        default:
-            break;
+        };
+        this.log("DownloadWorker created.");
+        this.init();
     }
-});
+    DownloadWorker.prototype.log = function (message) {
+        console.log("<" + new Date().toLocaleString() + "> " + message);
+    };
+    DownloadWorker.prototype.getWorker = function () {
+        return this.worker;
+    };
+    return DownloadWorker;
+}());

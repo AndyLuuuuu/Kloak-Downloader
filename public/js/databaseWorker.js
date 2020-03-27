@@ -1,90 +1,98 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
+var DatabaseWorker = /** @class */ (function () {
+    function DatabaseWorker() {
+        var _this = this;
+        this.init = function () {
+            var workerURL = URL.createObjectURL(new Blob(["(" + _this.workerFn.toString() + ")()"], { type: 'text/javascript' }));
+            _this.worker = new Worker(workerURL);
+            URL.revokeObjectURL(workerURL);
+        };
+        this.workerFn = function () {
+            var db = null;
+            var fileStore = null;
+            var databaseWorkerChannel = null;
+            function saveToDatabase(db, data) {
+                // console.log(db);
+                var tx = db.transaction(data.filename, 'readwrite');
+                var store = tx.objectStore(data.filename);
+                store.add({ offset: data.offset, data: data.base64 }, data.offset);
             }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
-    }
-};
-var DB_VERSION = 3;
-var db = null;
-var dbPromise = null;
-var transaction = null;
-function saveToDatabase(db, data, upgrade) {
-    return __awaiter(this, void 0, void 0, function () {
-        var fileStore, tx, txAdd;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    fileStore = null;
-                    if (!upgrade) return [3 /*break*/, 2];
-                    return [4 /*yield*/, db.createObjectStore(data.filename, { keyPath: 'offset' })];
-                case 1:
-                    fileStore = _a.sent();
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, db.transaction(data.filename, 'readwrite')];
-                case 3:
-                    tx = _a.sent();
-                    tx.oncomplete = function () {
-                        console.log('Added data');
-                    };
-                    txAdd = tx.objectStore(data.filename);
-                    txAdd.add({ offset: data.offset, data: data.base64 });
-                    _a.label = 4;
-                case 4: return [2 /*return*/];
+            function checkFileExistence(db, data) {
+                console.log(data);
+                var tx = db.transaction(data.filename, 'readonly');
+                var store = tx.objectStore(data.filename);
+                store.count(data.offset).onsuccess = function (e) {
+                    console.log(e.target.result);
+                    databaseWorkerChannel.postMessage({
+                        cmd: 'CHECKED_FILE',
+                        data: { fileExists: Boolean(e.target.result), file: data }
+                    });
+                };
             }
-        });
-    });
-}
-self.addEventListener('message', function (e) {
-    var cmd = e.data.cmd;
-    var data = e.data.data;
-    switch (cmd) {
-        case 'start':
-            break;
-        case 'saveToDB':
-            db = indexedDB.open('kloak-idb', DB_VERSION);
-            db.onupgradeneeded = function (e) {
-                saveToDatabase(e.target.result, data, true);
-            };
-            db.onsuccess = function (e) {
-                saveToDatabase(e.target.result, data, false);
-            };
-            console.log(db);
-            // console.log(db)
-            // transaction = db.transaction(data.filename, 'readwrite')
-            // let addTransaction = transaction.objectStore(data.filename)
-            // addTransaction.add({ offset: data.offset, data: data.base64 })
-            break;
-        default:
-            break;
+            self.addEventListener('message', function (e) {
+                var cmd = e.data.cmd;
+                var data = e.data.data;
+                switch (cmd) {
+                    case 'START':
+                        databaseWorkerChannel = data.channel;
+                        var req = indexedDB.open('kloak-files', 1);
+                        req.onupgradeneeded = function (e) {
+                            db = e.target.result;
+                            fileStore = db.createObjectStore(data.fileInformation.filename, {
+                                autoIncrement: true
+                            });
+                        };
+                        req.onsuccess = function (e) {
+                            db = e.target.result;
+                            if (e.target.readyState === 'done') {
+                                data.channel.postMessage({
+                                    cmd: 'DATABASE_READY',
+                                    data: { message: 'Database and filestore ready.' }
+                                });
+                            }
+                            console.log(db);
+                        };
+                        req.onerror = function (e) {
+                            data.channel.postMessage({
+                                cmd: 'DATABASE_ERROR',
+                                data: { message: 'Database error.' }
+                            });
+                        };
+                        break;
+                    case 'CHECK_FILE':
+                        checkFileExistence(db, data);
+                        // if (!res) {
+                        //   console.log(res);
+                        //   databaseWorkerChannel.postMessage({
+                        //     cmd: 'CHECKED_FILE',
+                        //     data: { fileExists: res, file: data }
+                        //   });
+                        // }
+                        break;
+                    case 'SAVE_TO_DATABASE':
+                        saveToDatabase(db, data);
+                        console.log('DATABASEWORKER', data);
+                        databaseWorkerChannel.postMessage({
+                            cmd: 'SAVED_TO_DATABASE',
+                            data: {
+                                filename: data.filename,
+                                offset: data.offset,
+                                message: 'Successfully saved to database.'
+                            }
+                        });
+                        break;
+                    default:
+                        break;
+                }
+            });
+        };
+        this.log("DatabaseWorker created.");
+        this.init();
     }
-});
+    DatabaseWorker.prototype.log = function (message) {
+        console.log("<" + new Date().toLocaleString() + "> " + message);
+    };
+    DatabaseWorker.prototype.getWorker = function () {
+        return this.worker;
+    };
+    return DatabaseWorker;
+}());
