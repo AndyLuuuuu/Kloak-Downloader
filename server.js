@@ -5,6 +5,7 @@ var path = require('path');
 var app = express();
 var PORT = process.env.PORT || 3000;
 var FILE_DIR = __dirname + '/files/';
+var mime = require('mime-types');
 app.use(express.static('public'));
 app.use('/files', express.static('files'));
 app.set('view engine', 'pug');
@@ -38,7 +39,8 @@ app.get('/requestfile', function (req, res) {
                 var extension = file.split('.')[file.split('.').length - 1];
                 var filename = req.query.file;
                 var size = fs.statSync(FILE_DIR + file).size;
-                res.send({ filename: filename, extension: extension, size: size });
+                var mimetype = mime.lookup(file);
+                res.send({ filename: filename, extension: extension, size: size, mimetype: mimetype });
             }
         });
     });
@@ -55,7 +57,8 @@ app.get('/download', function (req, res) {
         fs.read(fd, buffer, 0, Number(chunksize), Number(offset), function (err, bytesRead, buffer) {
             console.log(err);
             console.log(bytesRead);
-            res.send(buffer);
+            console.log(buffer.slice(0, bytesRead).length);
+            res.send(buffer.slice(0, bytesRead));
         });
     });
 });

@@ -1,12 +1,15 @@
 import ManagerWorker from './ManagerWorker.js';
+import AssemblyWorker from './AssemblyWorker.js';
 export default class Downloader {
   static JS_FOLDER_URL = `http://localhost:3000/js/`;
   private DEBUG = false;
   private fileInformation: fileInformation;
   private managerWorker: Worker;
+  private assemblyWorker: Worker;
   private downloadQueue: Array<downloadQueue> = [];
   private queueInterval;
-  private queueConsume;
+  private queueConsumeInterval;
+  private checkDownloadInterval;
   private downloadState: 'start' | 'pause' | 'stop' = 'stop';
   private systemState: 'ready' | 'waiting' = 'waiting';
   private chunksize: number = 1048576;
@@ -25,15 +28,6 @@ export default class Downloader {
         data: this.fileInformation
       });
       this.managerWorker.onmessage = this.messageChannel;
-      callback({
-        cmd: 'FILE_INFORMATION',
-        data: {
-          filename: this.fileInformation.filename,
-          extension: this.fileInformation.extension,
-          parts: this.fileInformation.parts,
-          chunksize: this.fileInformation.chunksize
-        }
-      });
     });
     this.mainCallback = callback;
   }
@@ -46,16 +40,36 @@ export default class Downloader {
 
   messageChannel = e => {
     const cmd = e.data.cmd;
+    const data = e.data.data;
     switch (cmd) {
       case 'SYSTEM_READY':
         this.mainCallback(e.data);
         this.systemState = 'ready';
         this.queueInterval = this.pushQueue();
-        this.queueConsume = this.consumeQueue();
+        this.queueConsumeInterval = this.consumeQueue();
+        this.checkDownloadInterval = this.checkDownloadStatus();
+        this.managerWorker.postMessage({
+          cmd: 'CHECK_FILE_PROGRESS',
+          data: this.fileInformation
+        });
+        break;
+      case 'CHECKED_FILE_PROGRESS':
+        this.fileInformation.downloadCount = data.downloadCount;
+        this.mainCallback({
+          cmd: 'FILE_INFORMATION',
+          data: this.fileInformation
+        });
         break;
       case 'SEGMENT_COMPLETE':
         this.mainCallback(e.data);
         break;
+      case 'ASSEMBLER_READY':
+        this.assemblyWorker.postMessage({
+          cmd: 'REQUEST_FILE',
+          data: data
+        });
+      case 'COMPLETE_FILE':
+        this.mainCallback({ cmd: 'COMPLETE_FILE', data });
       default:
         break;
     }
@@ -72,11 +86,12 @@ export default class Downloader {
           extension: file.extension,
           totalsize: file.size,
           parts: Math.ceil(file.size / this.chunksize),
-          chunksize: 1048576,
+          chunksize: this.chunksize,
           downloadCount: 0,
-          startOffset: 0
+          startOffset: 0,
+          mimetype: file.mimetype
         };
-        console.log(file.size);
+        //console.log(file.size);
       });
   };
 
@@ -93,7 +108,7 @@ export default class Downloader {
       if (this.downloadState === 'start') {
         if (this.downloadQueue.length < 20) {
           this.log('Adding to queue!');
-          console.log(this.fileInformation.startOffset);
+          //console.log(this.fileInformation.startOffset);
           if (
             this.fileInformation.startOffset <= this.fileInformation.totalsize
           ) {
@@ -143,6 +158,35 @@ export default class Downloader {
         }
       }
     }, 200);
+  };
+
+  checkDownloadStatus = () => {
+    return setInterval(() => {
+      //console.log(this.fileInformation.downloadCount);
+      if (this.fileInformation.downloadCount >= this.fileInformation.parts) {
+        this.mainCallback({
+          cmd: 'DOWNLOAD_FINISHED',
+          data: this.fileInformation
+        });
+      }
+    }, 1000);
+  };
+
+  postMessage = e => {
+    const cmd = e.cmd;
+    const data = e.data;
+    switch (cmd) {
+      case 'REQUEST_FILE':
+        this.assemblyWorker = new AssemblyWorker().getWorker();
+        this.assemblyWorker.onmessage = this.messageChannel;
+        this.assemblyWorker.postMessage({
+          cmd: 'START',
+          data
+        });
+        break;
+      default:
+        break;
+    }
   };
 
   start = () => {

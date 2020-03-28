@@ -1,6 +1,8 @@
 import Downloader from './Downloader.js';
 
-const button = document.getElementById('dl');
+const downloadButton = document.getElementById('dl');
+const saveButton = document.getElementById('save');
+const hiddendl = document.getElementById('hiddendl');
 const progressSegment = document.getElementById('progressSegment');
 const progressMessage = document.getElementById('progressMessage');
 
@@ -13,9 +15,11 @@ const updateProgress = data => {
     (downloads[data.filename].downloadCount / downloads[data.filename].parts) *
       100
   )}%`;
-  downloads[data.filename].downloadCount++;
-  progressSegment.style.width = percent;
-  progressMessage.textContent = percent;
+  if (downloads[data.filename].downloadCount !== 0) {
+    downloads[data.filename].downloadCount++;
+    progressSegment.style.width = percent;
+    progressMessage.textContent = percent;
+  }
 };
 
 const downloads = {};
@@ -28,12 +32,21 @@ const callback = e => {
       log('Downloader ready.');
       break;
     case 'FILE_INFORMATION':
-      downloads[data.filename] = { ...data, downloadCount: 0 };
-      console.log(downloads);
+      downloads[data.filename] = data;
+      updateProgress(data);
       break;
     case 'SEGMENT_COMPLETE':
       updateProgress(data);
       break;
+    case 'DOWNLOAD_FINISHED':
+      saveButton.disabled = false;
+      saveButton.setAttribute('data-file', data.filename);
+      downloads[data.filename]['finished'] = true;
+      // console.log('YO BRO, DOWNLOAD FINISHED');
+      break;
+    case 'COMPLETE_FILE':
+      hiddendl.href = data.url;
+      hiddendl.click();
     default:
       break;
   }
@@ -44,6 +57,14 @@ const download = new Downloader(
   callback
 );
 
-button.addEventListener('click', () => {
+downloadButton.addEventListener('click', () => {
   download.start();
+});
+
+saveButton.addEventListener('click', e => {
+  download.postMessage({
+    cmd: 'REQUEST_FILE',
+    data: downloads[e.target.dataset.file]
+  });
+  progressMessage.textContent = 'Preparing file...';
 });

@@ -5,6 +5,7 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const FILE_DIR = __dirname + '/files/';
+const mime = require('mime-types');
 app.use(express.static('public'));
 app.use('/files', express.static('files'));
 app.set('view engine', 'pug');
@@ -43,7 +44,8 @@ app.get('/requestfile', (req, res) => {
         const extension = file.split('.')[file.split('.').length - 1];
         const filename = req.query.file;
         const { size } = fs.statSync(FILE_DIR + file);
-        res.send({ filename, extension, size });
+        const mimetype = mime.lookup(file);
+        res.send({ filename, extension, size, mimetype });
       }
     });
   });
@@ -69,7 +71,8 @@ app.get('/download', (req, res) => {
     ) {
       console.log(err);
       console.log(bytesRead);
-      res.send(buffer);
+      console.log(buffer.slice(0, bytesRead).length);
+      res.send(buffer.slice(0, bytesRead));
     });
   });
 });

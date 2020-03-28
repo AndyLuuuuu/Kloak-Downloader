@@ -4,13 +4,15 @@ html
   link(href="../css/downloader.css" rel="stylesheet")
   body
     .dlWrapper
-      button.button(style="margin-left: 1rem;")
-        a#dl(download)="Download file"
+      button.button#dl(style="margin-left: 1rem;")="Start download"
+      button.button#save(style="margin-left: 1rem;" disabled)="Save file"
+      a#hiddendl(style="display: none" download)
       .wrapper
         .progressWrapper
           .progressBar
             .progressSegment#progressSegment
-          p.progressMessage#progressMessage="Downloading..."
+          p.progressMessage#progressMessage="Ready to download!"
+      script(type="module" src="../js/AssemblyWorker.js")
       script(type="module" src="../js/ManagerWorker.js")
       script(type="module" src="../js/Downloader.js")
       script(type="module" src="../js/Main.js")

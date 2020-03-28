@@ -1,4 +1,5 @@
 import ManagerWorker from './ManagerWorker.js';
+import AssemblyWorker from './AssemblyWorker.js';
 var Downloader = /** @class */ (function () {
     function Downloader(url, callback) {
         var _this = this;
@@ -14,16 +15,36 @@ var Downloader = /** @class */ (function () {
         };
         this.messageChannel = function (e) {
             var cmd = e.data.cmd;
+            var data = e.data.data;
             switch (cmd) {
                 case 'SYSTEM_READY':
                     _this.mainCallback(e.data);
                     _this.systemState = 'ready';
                     _this.queueInterval = _this.pushQueue();
-                    _this.queueConsume = _this.consumeQueue();
+                    _this.queueConsumeInterval = _this.consumeQueue();
+                    _this.checkDownloadInterval = _this.checkDownloadStatus();
+                    _this.managerWorker.postMessage({
+                        cmd: 'CHECK_FILE_PROGRESS',
+                        data: _this.fileInformation
+                    });
+                    break;
+                case 'CHECKED_FILE_PROGRESS':
+                    _this.fileInformation.downloadCount = data.downloadCount;
+                    _this.mainCallback({
+                        cmd: 'FILE_INFORMATION',
+                        data: _this.fileInformation
+                    });
                     break;
                 case 'SEGMENT_COMPLETE':
                     _this.mainCallback(e.data);
                     break;
+                case 'ASSEMBLER_READY':
+                    _this.assemblyWorker.postMessage({
+                        cmd: 'REQUEST_FILE',
+                        data: data
+                    });
+                case 'COMPLETE_FILE':
+                    _this.mainCallback({ cmd: 'COMPLETE_FILE', data: data });
                 default:
                     break;
             }
@@ -39,11 +60,12 @@ var Downloader = /** @class */ (function () {
                     extension: file.extension,
                     totalsize: file.size,
                     parts: Math.ceil(file.size / _this.chunksize),
-                    chunksize: 1048576,
+                    chunksize: _this.chunksize,
                     downloadCount: 0,
-                    startOffset: 0
+                    startOffset: 0,
+                    mimetype: file.mimetype
                 };
-                console.log(file.size);
+                //console.log(file.size);
             });
         };
         this.requestDownload = function (file) {
@@ -58,7 +80,7 @@ var Downloader = /** @class */ (function () {
                 if (_this.downloadState === 'start') {
                     if (_this.downloadQueue.length < 20) {
                         _this.log('Adding to queue!');
-                        console.log(_this.fileInformation.startOffset);
+                        //console.log(this.fileInformation.startOffset);
                         if (_this.fileInformation.startOffset <= _this.fileInformation.totalsize) {
                             _this.downloadQueue.push({
                                 filename: _this.fileInformation.filename,
@@ -102,6 +124,33 @@ var Downloader = /** @class */ (function () {
                 }
             }, 200);
         };
+        this.checkDownloadStatus = function () {
+            return setInterval(function () {
+                //console.log(this.fileInformation.downloadCount);
+                if (_this.fileInformation.downloadCount >= _this.fileInformation.parts) {
+                    _this.mainCallback({
+                        cmd: 'DOWNLOAD_FINISHED',
+                        data: _this.fileInformation
+                    });
+                }
+            }, 1000);
+        };
+        this.postMessage = function (e) {
+            var cmd = e.cmd;
+            var data = e.data;
+            switch (cmd) {
+                case 'REQUEST_FILE':
+                    _this.assemblyWorker = new AssemblyWorker().getWorker();
+                    _this.assemblyWorker.onmessage = _this.messageChannel;
+                    _this.assemblyWorker.postMessage({
+                        cmd: 'START',
+                        data: data
+                    });
+                    break;
+                default:
+                    break;
+            }
+        };
         this.start = function () {
             _this.downloadState = 'start';
         };
@@ -116,15 +165,6 @@ var Downloader = /** @class */ (function () {
                 data: _this.fileInformation
             });
             _this.managerWorker.onmessage = _this.messageChannel;
-            callback({
-                cmd: 'FILE_INFORMATION',
-                data: {
-                    filename: _this.fileInformation.filename,
-                    extension: _this.fileInformation.extension,
-                    parts: _this.fileInformation.parts,
-                    chunksize: _this.fileInformation.chunksize
-                }
-            });
         });
         this.mainCallback = callback;
     }

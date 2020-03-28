@@ -23,9 +23,10 @@ class DatabaseWorker {
 
   workerFn = () => {
     let db = null;
+    let tx = null;
     let fileStore = null;
     let databaseWorkerChannel: MessagePort = null;
-
+    let count = 0;
     function saveToDatabase(db: IDBDatabase, data) {
       // console.log(db);
       let tx = db.transaction(data.filename, 'readwrite');
@@ -35,13 +36,27 @@ class DatabaseWorker {
 
     function checkFileExistence(db: IDBDatabase, data) {
       console.log(data);
-      let tx = db.transaction(data.filename, 'readonly');
-      let store = tx.objectStore(data.filename);
-      store.count(data.offset).onsuccess = e => {
-        console.log(e.target.result);
+      tx = db.transaction(data.filename, 'readonly');
+      fileStore = tx.objectStore(data.filename);
+      fileStore.getKey(data.offset).onsuccess = e => {
+        console.log(Boolean(e.target.result));
         databaseWorkerChannel.postMessage({
           cmd: 'CHECKED_FILE',
           data: { fileExists: Boolean(e.target.result), file: data }
+        });
+      };
+    }
+
+    function checkFileProgress(db: IDBDatabase, data) {
+      tx = db.transaction(data.filename, 'readonly');
+      fileStore = tx.objectStore(data.filename);
+      fileStore.count().onsuccess = e => {
+        console.log(e.target.result);
+        databaseWorkerChannel.postMessage({
+          cmd: 'CHECKED_FILE_PROGRESS',
+          data: {
+            downloadCount: e.target.result
+          }
         });
       };
     }
@@ -55,9 +70,12 @@ class DatabaseWorker {
           var req = indexedDB.open('kloak-files', 1);
           req.onupgradeneeded = function(e) {
             db = e.target.result;
-            fileStore = db.createObjectStore(data.fileInformation.filename, {
-              autoIncrement: true
-            });
+            let fileStore = db.createObjectStore(
+              data.fileInformation.filename,
+              {
+                autoIncrement: true
+              }
+            );
           };
           req.onsuccess = function(e) {
             db = e.target.result;
@@ -76,16 +94,30 @@ class DatabaseWorker {
             });
           };
           break;
+        case 'REQUEST_FILE_PIECES':
+          fileStore = db
+            .transaction(data.filename, 'readonly')
+            .objectStore(data.filename);
+          fileStore.openCursor().onsuccess = e => {
+            let cursor = e.target.result;
+            if (cursor) {
+              databaseWorkerChannel.postMessage({
+                cmd: 'REQUESTED_FILE_PIECE',
+                data: cursor.value
+              });
+              cursor.continue();
+            } else {
+              databaseWorkerChannel.postMessage({
+                cmd: 'REQUESTED_FILE_COMPLETE',
+                data
+              });
+            }
+          };
+
+          console.log(data);
+          break;
         case 'CHECK_FILE':
           checkFileExistence(db, data);
-          // if (!res) {
-          //   console.log(res);
-          //   databaseWorkerChannel.postMessage({
-          //     cmd: 'CHECKED_FILE',
-          //     data: { fileExists: res, file: data }
-          //   });
-          // }
-
           break;
         case 'SAVE_TO_DATABASE':
           saveToDatabase(db, data);
@@ -98,6 +130,9 @@ class DatabaseWorker {
               message: 'Successfully saved to database.'
             }
           });
+        case 'CHECK_FILE_PROGRESS':
+          console.log(data);
+          checkFileProgress(db, data);
           break;
         default:
           break;

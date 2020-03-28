@@ -45,6 +45,9 @@ export default class ManagerWorker {
             downloadFile(data.file);
           }
           break;
+        case 'CHECKED_FILE_PROGRESS':
+          self.postMessage({ cmd: 'CHECKED_FILE_PROGRESS', data });
+          break;
         case 'SAVE_TO_DATABASE':
           databaseWorker.worker.postMessage({
             cmd,
@@ -162,6 +165,12 @@ export default class ManagerWorker {
             },
             [databaseWorker.channel.port2]
           );
+          break;
+        case 'CHECK_FILE_PROGRESS':
+          databaseWorker.worker.postMessage({
+            cmd: 'CHECK_FILE_PROGRESS',
+            data
+          });
           break;
         case 'REQUEST DOWNLOAD':
           checkFileExistence(data);

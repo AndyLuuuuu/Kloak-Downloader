@@ -27,6 +27,9 @@ var ManagerWorker = /** @class */ (function () {
                             downloadFile(data.file);
                         }
                         break;
+                    case 'CHECKED_FILE_PROGRESS':
+                        self.postMessage({ cmd: 'CHECKED_FILE_PROGRESS', data: data });
+                        break;
                     case 'SAVE_TO_DATABASE':
                         databaseWorker.worker.postMessage({
                             cmd: cmd,
@@ -133,6 +136,12 @@ var ManagerWorker = /** @class */ (function () {
                                 fileInformation: data
                             }
                         }, [databaseWorker.channel.port2]);
+                        break;
+                    case 'CHECK_FILE_PROGRESS':
+                        databaseWorker.worker.postMessage({
+                            cmd: 'CHECK_FILE_PROGRESS',
+                            data: data
+                        });
                         break;
                     case 'REQUEST DOWNLOAD':
                         checkFileExistence(data);

@@ -5,9 +5,10 @@ interface fileInformation {
   extension: string;
   totalsize: number | string;
   parts: number | string;
-  chunksize: 1048576;
+  chunksize: number;
   downloadCount: number;
   startOffset: number;
+  mimetype: string;
 }
 
 interface managerMessage {
