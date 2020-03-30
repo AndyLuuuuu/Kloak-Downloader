@@ -19,6 +19,9 @@ app.get('/', function (req, res) {
 app.get('/downloader', function (req, res) {
     res.render('downloader');
 });
+app.get('/video', function (req, res) {
+    res.render('video');
+});
 app.get('/file', function (req, res) {
     var path = req.query.path;
     // res.send()
@@ -61,6 +64,19 @@ app.get('/download', function (req, res) {
             res.send(buffer.slice(0, bytesRead));
         });
     });
+});
+app.get('/videodownload', function (req, res) {
+    // total = movie.length;
+    // var range = req.headers.range;
+    // var positions = range.replace(/bytes=/, "").split("-");
+    // var start = parseInt(positions[0], 10);
+    // var end = positions[1] ? parseInt(positions[1], 10) : total - 1;
+    // var chunksize = (end-start)+1;
+    // res.writeHead(206, { "Content-Range": "bytes " + start + "-" + end + "/" + total,
+    //                      "Accept-Ranges": "bytes",
+    //                      "Content-Length": chunksize,
+    //                      "Content-Type":"video/mp4"});
+    // res.end(movie.slice(start, end+1), "binary");
 });
 app.listen(PORT, function () {
     console.log("Kloak Video on PORT " + PORT);

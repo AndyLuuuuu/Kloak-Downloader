@@ -44,7 +44,7 @@ var callback = function (e) {
             break;
     }
 };
-var download = new Downloader("http://localhost:3000/requestfile?file=d82488b4-f1fc-4497-b5ac-c081a8955d75", callback);
+var download = new Downloader("http://localhost:3000/requestfile?file=0e781511-ed5e-42d7-a2da-df4b5a344fb2", callback);
 downloadButton.addEventListener('click', function () {
     download.start();
 });
