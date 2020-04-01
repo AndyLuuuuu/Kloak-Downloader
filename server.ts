@@ -76,12 +76,42 @@ app.get('/download', (req, res) => {
       console.log(err)
       console.log(bytesRead)
       console.log(buffer.slice(0, bytesRead).length)
+      console.log(buffer.slice(0, bytesRead).toString('base64'))
+      console.log('\r\r')
       res.send(buffer.slice(0, bytesRead))
     })
   })
 })
 
-app.get('/videodownload', (req, res) => {
+app.get('/test', (req, res) => {
+  console.log(req.headers)
+  const { size } = fs.statSync(
+    FILE_DIR + '0e781511-ed5e-42d7-a2da-df4b5a344fb2.mp4'
+  )
+  let range = req.headers.range
+  let positions = range.replace(/bytes=/, '').split('-')
+  let start = parseInt(positions[0])
+  let end = parseInt(positions[1])
+  console.log(size)
+  var buffer = Buffer.alloc(Number(1048576))
+
+  fs.open(
+    __dirname + `/files/0e781511-ed5e-42d7-a2da-df4b5a344fb2.mp4`,
+    'r',
+    function(err, fd) {
+      fs.read(fd, buffer, 0, 1048576, start, function(err, bytesRead, buffer) {
+        console.log(err)
+        console.log(bytesRead)
+        console.log(buffer.slice(0, bytesRead).length)
+        console.log(buffer.slice(0, bytesRead))
+        res.header('Content-Range', `bytes ${start}-${end}/${size}`)
+        res.header('Accept-Ranges', 'bytes')
+        res.header('Content-Length', 1048576)
+        res.header('Content-Type', 'video/mp4')
+        res.send(buffer.slice(0, bytesRead))
+      })
+    }
+  )
   // total = movie.length;
   // var range = req.headers.range;
   // var positions = range.replace(/bytes=/, "").split("-");

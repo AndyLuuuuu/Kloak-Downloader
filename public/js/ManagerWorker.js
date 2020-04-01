@@ -129,6 +129,7 @@ var ManagerWorker = /** @class */ (function () {
                 var data = e.data.data;
                 switch (cmd) {
                     case 'START':
+                        console.log(data);
                         databaseWorker.worker.postMessage({
                             cmd: 'START',
                             data: {
@@ -144,6 +145,7 @@ var ManagerWorker = /** @class */ (function () {
                         });
                         break;
                     case 'REQUEST DOWNLOAD':
+                        console.log(data);
                         checkFileExistence(data);
                         break;
                     default:

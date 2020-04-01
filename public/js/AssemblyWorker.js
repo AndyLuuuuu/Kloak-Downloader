@@ -11,14 +11,13 @@ var AssemblyWorker = /** @class */ (function () {
             importScripts(self.location.origin + "/js/jimp.min.js");
             var fileInformation = null;
             var assembledFile = null;
-            var assembleFile = function () { };
             var messageChannel = function (e) {
                 var cmd = e.data.cmd;
                 var data = e.data.data;
                 switch (cmd) {
                     case 'DATABASE_READY':
                         console.log(fileInformation);
-                        assembledFile = new Uint8Array(fileInformation.totalsize);
+                        assembledFile = new Uint8Array(fileInformation.size);
                         databaseWorker.worker.postMessage({
                             cmd: 'REQUEST_FILE_PIECES',
                             data: fileInformation
@@ -33,9 +32,13 @@ var AssemblyWorker = /** @class */ (function () {
                         var file = new Blob([assembledFile.buffer], {
                             type: data.mimetype
                         });
+                        console.log(data);
                         var fileURL = URL.createObjectURL(file);
                         self.postMessage({ cmd: 'COMPLETE_FILE', data: { url: fileURL } });
-                        console.log(data);
+                        databaseWorker.worker.postMessage({ cmd: "CLEAR_FILESTORE", data: fileInformation });
+                        // databaseWorker.worker.terminate()
+                        // self.close()
+                        console.log(file);
                         break;
                     default:
                         break;
@@ -58,7 +61,15 @@ var AssemblyWorker = /** @class */ (function () {
                 switch (cmd) {
                     case 'START':
                         fileInformation = data;
+                        console.log(data);
                         break;
+                    case 'NEXT':
+                        fileInformation = data;
+                        assembledFile = new Uint8Array(fileInformation.size);
+                        databaseWorker.worker.postMessage({
+                            cmd: 'REQUEST_FILE_PIECES',
+                            data: fileInformation
+                        });
                     default:
                         break;
                 }
