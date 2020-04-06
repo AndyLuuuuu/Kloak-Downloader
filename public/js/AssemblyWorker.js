@@ -9,6 +9,10 @@ var AssemblyWorker = /** @class */ (function () {
         this.workerFn = function () {
             importScripts(self.location.origin + "/js/DatabaseWorker.js");
             importScripts(self.location.origin + "/js/jimp.min.js");
+            var databaseWorker = {
+                worker: new DatabaseWorker().getWorker(),
+                channel: new MessageChannel()
+            };
             var fileInformation = null;
             var assembledFile = null;
             var messageChannel = function (e) {
@@ -24,9 +28,11 @@ var AssemblyWorker = /** @class */ (function () {
                         });
                         break;
                     case 'REQUESTED_FILE_PIECE':
+                        console.log(data.offset);
+                        console.log(assembledFile.length);
                         assembledFile.set(Buffer.from(data.data, 'base64'), data.offset);
-                        console.log(assembledFile);
-                        console.log(data);
+                        // console.log(assembledFile)
+                        // console.log(data)
                         break;
                     case 'REQUESTED_FILE_COMPLETE':
                         var file = new Blob([assembledFile.buffer], {
@@ -35,7 +41,11 @@ var AssemblyWorker = /** @class */ (function () {
                         console.log(data);
                         var fileURL = URL.createObjectURL(file);
                         self.postMessage({ cmd: 'COMPLETE_FILE', data: { url: fileURL } });
-                        databaseWorker.worker.postMessage({ cmd: "CLEAR_FILESTORE", data: fileInformation });
+                        databaseWorker.worker.postMessage({
+                            cmd: 'CLEAR_FILESTORE',
+                            data: fileInformation
+                        });
+                        assembledFile = null;
                         // databaseWorker.worker.terminate()
                         // self.close()
                         console.log(file);
@@ -44,23 +54,27 @@ var AssemblyWorker = /** @class */ (function () {
                         break;
                 }
             };
-            var databaseWorker = {
-                worker: new DatabaseWorker().getWorker(),
-                channel: new MessageChannel()
+            var setupDatabaseWorker = function () {
+                databaseWorker = {
+                    worker: new DatabaseWorker().getWorker(),
+                    channel: new MessageChannel()
+                };
+                databaseWorker.channel.port1.onmessage = messageChannel;
+                databaseWorker.worker.postMessage({
+                    cmd: 'START',
+                    data: {
+                        fileInformation: fileInformation,
+                        channel: databaseWorker.channel.port2
+                    }
+                }, [databaseWorker.channel.port2]);
             };
-            databaseWorker.channel.port1.onmessage = messageChannel;
-            databaseWorker.worker.postMessage({
-                cmd: 'START',
-                data: {
-                    channel: databaseWorker.channel.port2
-                }
-            }, [databaseWorker.channel.port2]);
             self.addEventListener('message', function (e) {
                 var cmd = e.data.cmd;
                 var data = e.data.data;
                 switch (cmd) {
                     case 'START':
                         fileInformation = data;
+                        setupDatabaseWorker();
                         console.log(data);
                         break;
                     case 'NEXT':

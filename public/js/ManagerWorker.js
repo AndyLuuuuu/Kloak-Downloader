@@ -94,7 +94,8 @@ var ManagerWorker = /** @class */ (function () {
                         data: {
                             filename: file.filename,
                             extension: file.extension,
-                            offset: file.offset,
+                            startOffset: file.startOffset,
+                            downloadOffset: file.downloadOffset,
                             chunksize: file.chunksize
                         }
                     });
@@ -109,7 +110,8 @@ var ManagerWorker = /** @class */ (function () {
                                 data: {
                                     filename: file.filename,
                                     extension: file.extension,
-                                    offset: file.offset,
+                                    startOffset: file.startOffset,
+                                    downloadOffset: file.downloadOffset,
                                     chunksize: file.chunksize
                                 }
                             });
@@ -146,7 +148,7 @@ var ManagerWorker = /** @class */ (function () {
                         break;
                     case 'REQUEST DOWNLOAD':
                         console.log(data);
-                        checkFileExistence(data);
+                        downloadFile(data);
                         break;
                     default:
                         break;

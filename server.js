@@ -52,17 +52,14 @@ app.get('/download', function (req, res) {
     var filename = req.query.filename;
     var extension = req.query.extension;
     var chunksize = req.query.chunksize;
-    var offset = req.query.offset;
-    var read = false;
+    var offset = req.query.downloadOffset;
     console.log(offset, chunksize);
     var buffer = Buffer.alloc(Number(chunksize));
     fs.open(__dirname + ("/files/" + filename + "." + extension), 'r', function (err, fd) {
         fs.read(fd, buffer, 0, Number(chunksize), Number(offset), function (err, bytesRead, buffer) {
-            console.log(err);
-            console.log(bytesRead);
-            console.log(buffer.slice(0, bytesRead).length);
-            console.log(buffer.slice(0, bytesRead).toString('base64'));
-            console.log('\r\r');
+            // console.log(err)
+            // console.log(bytesRead)
+            console.log(buffer.slice(0, bytesRead));
             res.send(buffer.slice(0, bytesRead));
         });
     });

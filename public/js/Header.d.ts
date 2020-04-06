@@ -17,7 +17,7 @@ interface filePiece {
   chunksize: number
   downloadCount: number
   startOffset: number
-  endOffset: number
+  downloadOffset: number
   mimetype: string
 }
 
@@ -26,7 +26,7 @@ interface managerMessage {
   data: {
     filename: string
     extension: string
-    offset: number
+    startOffset: number
     chunksize: number
   }
 }
@@ -38,14 +38,16 @@ interface downloadWorkerMessage {
     filename: string
     extension: string
     base64: string
-    offset: number
+    startOffset: number
+    downloadOffset: number
   }
 }
 
 interface downloadQueue {
   filename: string
   extension: string
-  offset: number
+  startOffset: number
+  downloadOffset: number
   chunksize: number
 }
 

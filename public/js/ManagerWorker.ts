@@ -117,10 +117,11 @@ export default class ManagerWorker {
         const downloadWorker = createNewWorker()
         downloadWorker.worker.postMessage({
           cmd: 'DOWNLOAD',
-          data: {
+          data: <downloadQueue>{
             filename: file.filename,
             extension: file.extension,
-            offset: file.offset,
+            startOffset: file.startOffset,
+            downloadOffset: file.downloadOffset,
             chunksize: file.chunksize
           }
         })
@@ -131,10 +132,11 @@ export default class ManagerWorker {
           if (downloadWorkers[i].state === 'IDLE') {
             downloadWorkers[i].worker.postMessage({
               cmd: 'DOWNLOAD',
-              data: {
+              data: <downloadQueue>{
                 filename: file.filename,
                 extension: file.extension,
-                offset: file.offset,
+                startOffset: file.startOffset,
+                downloadOffset: file.downloadOffset,
                 chunksize: file.chunksize
               }
             })
@@ -175,7 +177,7 @@ export default class ManagerWorker {
           break
         case 'REQUEST DOWNLOAD':
           console.log(data)
-          checkFileExistence(data)
+          downloadFile(data)
           break
         default:
           break

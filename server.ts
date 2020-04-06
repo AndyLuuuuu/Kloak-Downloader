@@ -59,8 +59,7 @@ app.get('/download', (req, res) => {
   const filename = req.query.filename
   const extension = req.query.extension
   const chunksize = req.query.chunksize
-  const offset = req.query.offset
-  let read = false
+  const offset = req.query.downloadOffset
   console.log(offset, chunksize)
   var buffer = Buffer.alloc(Number(chunksize))
 
@@ -73,11 +72,9 @@ app.get('/download', (req, res) => {
       bytesRead,
       buffer
     ) {
-      console.log(err)
-      console.log(bytesRead)
-      console.log(buffer.slice(0, bytesRead).length)
-      console.log(buffer.slice(0, bytesRead).toString('base64'))
-      console.log('\r\r')
+      // console.log(err)
+      // console.log(bytesRead)
+      console.log(buffer.slice(0, bytesRead))
       res.send(buffer.slice(0, bytesRead))
     })
   })
