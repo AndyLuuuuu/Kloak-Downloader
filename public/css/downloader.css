@@ -1,49 +1,35 @@
-.dlWrapper {
-  padding: 2rem;
-  background-color: ghostwhite;
-  display: flex;
-  align-items: center;
-  justify-self: center;
+body {
+  padding: 1rem;
+}
+.downloadWrapper {
+  display: grid;
+  grid-template-columns: repeat(2, 150px);
+  grid-gap: 1rem;
 }
 
-.ui.progress {
-  margin: 0 1rem;
-}
-
-.button {
-  padding: 0.5rem;
-  border-radius: 5px;
-  background-color: white;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-}
-
-.wrapper {
-  background-color: ghostwhite;
-  display: flex;
-  justify-content: start;
-}
-
-.progressWrapper {
+.item {
+  padding: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
+  cursor: pointer;
+  transition: background-color 200ms ease-in-out;
 }
 
-.progressBar {
-  width: 30rem;
-  height: 0.5rem;
-  background-color: #cacad0;
-  content: '';
-  margin-left: 1rem;
-  border-radius: 10px;
-  position: relative;
+.item:hover {
+  background-color: cornflowerblue;
 }
 
-.progressSegment {
-  position: absolute;
-  background-color: cyan;
-  height: 100%;
-  border-radius: 10px;
-  content: '';
+.fileicon {
+  width: 4rem;
+  height: auto;
+  pointer-events: none;
+}
+
+.filedesc {
+  font-size: 0.8rem;
+  margin-top: 1rem;
+  pointer-events: none;
 }

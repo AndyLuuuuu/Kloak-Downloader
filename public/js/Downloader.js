@@ -1,18 +1,18 @@
 import ManagerWorker from './ManagerWorker.js';
 import AssemblyWorker from './AssemblyWorker.js';
 var Downloader = /** @class */ (function () {
-    function Downloader(url, callback) {
+    function Downloader(filename, callback) {
         var _this = this;
+        this.DOWNLOAD_BASE_URL = "http://192.168.0.12:3000/requestfile?file=";
+        this.filename = '';
         this.DEBUG = false;
         this.MAX_FILE_SIZE = 314572800;
-        this.FIVE_MB = 52428800;
         this.filePieces = [];
         this.currentFilePiece = null;
         this.assemblyWorker = null;
         this.downloadQueue = [];
         this.downloadState = 'stop';
-        this.systemState = 'waiting';
-        this.chunksize = 1048576;
+        this.chunksize = 2097152;
         this.log = function (message) {
             if (_this.DEBUG) {
                 console.log(message);
@@ -23,27 +23,37 @@ var Downloader = /** @class */ (function () {
             var data = e.data.data;
             switch (cmd) {
                 case 'SYSTEM_READY':
-                    _this.mainCallback(e.data);
-                    _this.systemState = 'ready';
-                    _this.queueInterval = _this.pushQueue();
-                    _this.queueConsumeInterval = _this.consumeQueue();
+                    console.log('lol');
+                    _this.mainCallback({
+                        cmd: 'SYSTEM_READY',
+                        data: { msg: data, self: _this }
+                    });
+                    _this.fetchFileInformation("" + _this.DOWNLOAD_BASE_URL + _this.filename).then(function (file) {
+                        _this.managerWorker.postMessage({
+                            cmd: 'CHECK_PROGRESS',
+                            data: file.filename
+                        });
+                    });
                     break;
-                // case 'CHECKED_FILE_PROGRESS':
-                //   this.fileInformation.downloadCount = data.downloadCount
-                //   this.mainCallback({
-                //     cmd: 'FILE_INFORMATION',
-                //     data: this.fileInformation
-                //   })
-                //   break
+                case 'CHECKED_PROGRESS':
+                    if (data) {
+                        _this.filePieces = data;
+                        console.log(data);
+                        console.log(_this.filePieces);
+                    }
+                    else {
+                        _this.setupFilePieces(_this.file);
+                        _this.managerWorker.postMessage({
+                            cmd: 'SAVE_PROGRESS',
+                            data: _this.filePieces
+                        });
+                    }
+                    _this.currentFilePiece = _this.filePieces.shift();
+                    break;
                 case 'SEGMENT_COMPLETE':
                     _this.currentFilePiece.downloadCount++;
                     _this.checkDownloadStatus();
                     break;
-                // case 'ASSEMBLER_READY':
-                // // this.assemblyWorker.postMessage({
-                // //   cmd: 'REQUEST_FILE',
-                // //   data: data
-                // // })
                 case 'COMPLETE_FILE':
                     console.log('COMPLETE FILE');
                     _this.mainCallback({
@@ -54,6 +64,10 @@ var Downloader = /** @class */ (function () {
                         }
                     });
                     if (_this.filePieces.length > 0) {
+                        _this.managerWorker.postMessage({
+                            cmd: 'SAVE_PROGRESS',
+                            data: _this.filePieces
+                        });
                         _this.currentFilePiece = _this.filePieces.shift();
                     }
                     else {
@@ -78,7 +92,7 @@ var Downloader = /** @class */ (function () {
                     downloadOffset: _this.filePieces.length > 0
                         ? _this.filePieces.length * _this.MAX_FILE_SIZE
                         : 0,
-                    mimetype: _this.fileInformation.mimetype
+                    mimetype: _this.file.mimetype
                 });
                 filesize -= _this.MAX_FILE_SIZE;
             }
@@ -95,7 +109,7 @@ var Downloader = /** @class */ (function () {
                     downloadOffset: _this.filePieces.length > 0
                         ? _this.filePieces.length * _this.MAX_FILE_SIZE
                         : 0,
-                    mimetype: _this.fileInformation.mimetype
+                    mimetype: _this.file.mimetype
                 });
             }
         };
@@ -105,15 +119,8 @@ var Downloader = /** @class */ (function () {
                 return res.json();
             })
                 .then(function (file) {
-                _this.fileInformation = {
-                    filename: file.filename,
-                    extension: file.extension,
-                    totalsize: file.size,
-                    parts: Math.ceil(file.size / _this.chunksize),
-                    mimetype: file.mimetype
-                };
-                _this.setupFilePieces(file);
-                //console.log(file.size);
+                _this.file = file;
+                return file;
             });
         };
         this.pushQueue = function () {
@@ -121,7 +128,6 @@ var Downloader = /** @class */ (function () {
                 console.log(_this.downloadState);
                 if (_this.downloadState === 'start') {
                     if (_this.downloadQueue.length < 20) {
-                        //console.log(this.fileInformation.startOffset);
                         if (_this.currentFilePiece.downloadCount < _this.currentFilePiece.parts) {
                             _this.downloadQueue.push({
                                 filename: _this.currentFilePiece.filename,
@@ -140,7 +146,7 @@ var Downloader = /** @class */ (function () {
                         }
                     }
                 }
-            }, 500);
+            }, 1000);
         };
         this.consumeQueue = function () {
             return setInterval(function () {
@@ -154,7 +160,7 @@ var Downloader = /** @class */ (function () {
                         _this.managerWorker.postMessage(message);
                     }
                 }
-            }, 500);
+            }, 1000);
         };
         this.checkDownloadStatus = function () {
             if (_this.currentFilePiece.downloadCount >= _this.currentFilePiece.parts) {
@@ -174,22 +180,6 @@ var Downloader = /** @class */ (function () {
                 }
             }
         };
-        //   postMessage = e => {
-        //     const cmd = e.cmd
-        //     const data: fileInformation = e.data
-        //     switch (cmd) {
-        //       case 'REQUEST_FILE':
-        //         this.assemblyWorker = new AssemblyWorker().getWorker()
-        //         this.assemblyWorker.onmessage = this.messageChannel
-        //         this.assemblyWorker.postMessage({
-        //           cmd: 'START',
-        //           data
-        //         })
-        //         break
-        //       default:
-        //         break
-        //     }
-        //   }
         this.start = function () {
             _this.downloadState = 'start';
         };
@@ -211,20 +201,15 @@ var Downloader = /** @class */ (function () {
         if (!window.indexedDB) {
             alert("Your browser doesn't support a stable version of IndexedDB.\nWe recommend you use the Chrome browser.");
         }
-        this.fetchFileInformation(url).then(function () {
-            console.log(_this.filePieces);
-            // this.log(this.fileInformation)
-            _this.managerWorker = new ManagerWorker().getWorker();
-            _this.currentFilePiece = _this.filePieces.shift();
-            _this.managerWorker.postMessage({
-                cmd: 'START',
-                data: _this.currentFilePiece
-            });
-            _this.managerWorker.onmessage = _this.messageChannel;
-        });
+        this.managerWorker = new ManagerWorker().getWorker();
+        this.managerWorker.onmessage = this.messageChannel;
+        this.managerWorker.postMessage({ cmd: 'START', data: filename });
         this.mainCallback = callback;
+        this.filename = filename;
+        this.queueInterval = this.pushQueue();
+        this.queueConsumeInterval = this.consumeQueue();
     }
-    Downloader.JS_FOLDER_URL = "http://localhost:3000/js/";
+    Downloader.JS_FOLDER_URL = "http://192.168.0.12:3000/js/";
     return Downloader;
 }());
 export default Downloader;

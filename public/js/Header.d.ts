@@ -37,7 +37,7 @@ interface downloadWorkerMessage {
     downloadWorkerID: number
     filename: string
     extension: string
-    base64: string
+    buffer: Buffer
     startOffset: number
     downloadOffset: number
   }

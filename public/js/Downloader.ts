@@ -1,11 +1,12 @@
 import ManagerWorker from './ManagerWorker.js'
 import AssemblyWorker from './AssemblyWorker.js'
 export default class Downloader {
-  static JS_FOLDER_URL = `http://localhost:3000/js/`
+  static JS_FOLDER_URL = `http://192.168.0.12:3000/js/`
+  private DOWNLOAD_BASE_URL = `http://192.168.0.12:3000/requestfile?file=`
+  private filename = ''
   private DEBUG = false
   private MAX_FILE_SIZE = 314572800
-  private FIVE_MB = 52428800
-  private fileInformation: fileInformation
+  private file: fileInformation
   private filePieces: Array<filePiece> = []
   private currentFilePiece: filePiece = null
   private managerWorker: Worker
@@ -15,27 +16,21 @@ export default class Downloader {
   private queueConsumeInterval
   private checkDownloadInterval
   private downloadState: 'start' | 'pause' | 'stop' = 'stop'
-  private systemState: 'ready' | 'waiting' = 'waiting'
-  private chunksize: number = 1048576
+  private chunksize: number = 2097152
   private mainCallback: Function
-  constructor(url: string, callback: Function) {
+  constructor(filename: string, callback: Function) {
     if (!window.indexedDB) {
       alert(
         "Your browser doesn't support a stable version of IndexedDB.\nWe recommend you use the Chrome browser."
       )
     }
-    this.fetchFileInformation(url).then(() => {
-      console.log(this.filePieces)
-      // this.log(this.fileInformation)
-      this.managerWorker = new ManagerWorker().getWorker()
-      this.currentFilePiece = this.filePieces.shift()
-      this.managerWorker.postMessage({
-        cmd: 'START',
-        data: this.currentFilePiece,
-      })
-      this.managerWorker.onmessage = this.messageChannel
-    })
+    this.managerWorker = new ManagerWorker().getWorker()
+    this.managerWorker.onmessage = this.messageChannel
+    this.managerWorker.postMessage({ cmd: 'START', data: filename })
     this.mainCallback = callback
+    this.filename = filename
+    this.queueInterval = this.pushQueue()
+    this.queueConsumeInterval = this.consumeQueue()
   }
 
   log = (message: any) => {
@@ -49,27 +44,38 @@ export default class Downloader {
     const data = e.data.data
     switch (cmd) {
       case 'SYSTEM_READY':
-        this.mainCallback(e.data)
-        this.systemState = 'ready'
-        this.queueInterval = this.pushQueue()
-        this.queueConsumeInterval = this.consumeQueue()
+        console.log('lol')
+        this.mainCallback({
+          cmd: 'SYSTEM_READY',
+          data: { msg: data, self: this },
+        })
+        this.fetchFileInformation(
+          `${this.DOWNLOAD_BASE_URL}${this.filename}`
+        ).then((file) => {
+          this.managerWorker.postMessage({
+            cmd: 'CHECK_PROGRESS',
+            data: file.filename,
+          })
+        })
         break
-      // case 'CHECKED_FILE_PROGRESS':
-      //   this.fileInformation.downloadCount = data.downloadCount
-      //   this.mainCallback({
-      //     cmd: 'FILE_INFORMATION',
-      //     data: this.fileInformation
-      //   })
-      //   break
+      case 'CHECKED_PROGRESS':
+        if (data) {
+          this.filePieces = data
+          console.log(data)
+          console.log(this.filePieces)
+        } else {
+          this.setupFilePieces(this.file)
+          this.managerWorker.postMessage({
+            cmd: 'SAVE_PROGRESS',
+            data: this.filePieces,
+          })
+        }
+        this.currentFilePiece = this.filePieces.shift()
+        break
       case 'SEGMENT_COMPLETE':
         this.currentFilePiece.downloadCount++
         this.checkDownloadStatus()
         break
-      // case 'ASSEMBLER_READY':
-      // // this.assemblyWorker.postMessage({
-      // //   cmd: 'REQUEST_FILE',
-      // //   data: data
-      // // })
       case 'COMPLETE_FILE':
         console.log('COMPLETE FILE')
         this.mainCallback({
@@ -80,6 +86,10 @@ export default class Downloader {
           },
         })
         if (this.filePieces.length > 0) {
+          this.managerWorker.postMessage({
+            cmd: 'SAVE_PROGRESS',
+            data: this.filePieces,
+          })
           this.currentFilePiece = this.filePieces.shift()
         } else {
           this.downloadState = 'stop'
@@ -105,7 +115,7 @@ export default class Downloader {
           this.filePieces.length > 0
             ? this.filePieces.length * this.MAX_FILE_SIZE
             : 0,
-        mimetype: this.fileInformation.mimetype,
+        mimetype: this.file.mimetype,
       })
       filesize -= this.MAX_FILE_SIZE
     }
@@ -123,7 +133,7 @@ export default class Downloader {
           this.filePieces.length > 0
             ? this.filePieces.length * this.MAX_FILE_SIZE
             : 0,
-        mimetype: this.fileInformation.mimetype,
+        mimetype: this.file.mimetype,
       })
     }
   }
@@ -134,15 +144,8 @@ export default class Downloader {
         return res.json()
       })
       .then((file) => {
-        this.fileInformation = {
-          filename: file.filename,
-          extension: file.extension,
-          totalsize: file.size,
-          parts: Math.ceil(file.size / this.chunksize),
-          mimetype: file.mimetype,
-        }
-        this.setupFilePieces(file)
-        //console.log(file.size);
+        this.file = file
+        return file
       })
   }
 
@@ -151,7 +154,6 @@ export default class Downloader {
       console.log(this.downloadState)
       if (this.downloadState === 'start') {
         if (this.downloadQueue.length < 20) {
-          //console.log(this.fileInformation.startOffset);
           if (
             this.currentFilePiece.downloadCount < this.currentFilePiece.parts
           ) {
@@ -172,7 +174,7 @@ export default class Downloader {
           }
         }
       }
-    }, 500)
+    }, 1000)
   }
 
   consumeQueue = () => {
@@ -187,7 +189,7 @@ export default class Downloader {
           this.managerWorker.postMessage(message)
         }
       }
-    }, 500)
+    }, 1000)
   }
 
   checkDownloadStatus = () => {
@@ -207,23 +209,6 @@ export default class Downloader {
       }
     }
   }
-
-  //   postMessage = e => {
-  //     const cmd = e.cmd
-  //     const data: fileInformation = e.data
-  //     switch (cmd) {
-  //       case 'REQUEST_FILE':
-  //         this.assemblyWorker = new AssemblyWorker().getWorker()
-  //         this.assemblyWorker.onmessage = this.messageChannel
-  //         this.assemblyWorker.postMessage({
-  //           cmd: 'START',
-  //           data
-  //         })
-  //         break
-  //       default:
-  //         break
-  //     }
-  //   }
 
   start = () => {
     this.downloadState = 'start'

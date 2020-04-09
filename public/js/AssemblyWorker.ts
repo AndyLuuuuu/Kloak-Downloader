@@ -82,7 +82,7 @@ export default class AssemblyWorker {
         {
           cmd: 'START',
           data: {
-            fileInformation: fileInformation,
+            filename: fileInformation.filename,
             channel: databaseWorker.channel.port2,
           },
         },

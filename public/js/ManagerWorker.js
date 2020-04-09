@@ -22,13 +22,8 @@ var ManagerWorker = /** @class */ (function () {
                 var cmd = e.data.cmd;
                 var data = e.data.data;
                 switch (cmd) {
-                    case 'CHECKED_FILE':
-                        if (!data.fileExists) {
-                            downloadFile(data.file);
-                        }
-                        break;
-                    case 'CHECKED_FILE_PROGRESS':
-                        self.postMessage({ cmd: 'CHECKED_FILE_PROGRESS', data: data });
+                    case 'CHECKED_PROGRESS':
+                        self.postMessage({ cmd: 'CHECKED_PROGRESS', data: data });
                         break;
                     case 'SAVE_TO_DATABASE':
                         databaseWorker.worker.postMessage({
@@ -83,9 +78,6 @@ var ManagerWorker = /** @class */ (function () {
                 downloadWorkers.push(downloadWorker);
                 return downloadWorker;
             };
-            var checkFileExistence = function (file) {
-                databaseWorker.worker.postMessage({ cmd: 'CHECK_FILE', data: file });
-            };
             var downloadFile = function (file) {
                 if (downloadWorkers.length < 5) {
                     var downloadWorker = createNewWorker();
@@ -136,15 +128,22 @@ var ManagerWorker = /** @class */ (function () {
                             cmd: 'START',
                             data: {
                                 channel: databaseWorker.channel.port2,
-                                fileInformation: data
+                                filename: data
                             }
                         }, [databaseWorker.channel.port2]);
                         break;
-                    case 'CHECK_FILE_PROGRESS':
+                    case 'CHECK_PROGRESS':
                         databaseWorker.worker.postMessage({
-                            cmd: 'CHECK_FILE_PROGRESS',
+                            cmd: 'CHECK_PROGRESS',
+                            data: { filename: data }
+                        });
+                        break;
+                    case 'SAVE_PROGRESS':
+                        databaseWorker.worker.postMessage({
+                            cmd: 'SAVE_PROGRESS',
                             data: data
                         });
+                        console.log(data);
                         break;
                     case 'REQUEST DOWNLOAD':
                         console.log(data);

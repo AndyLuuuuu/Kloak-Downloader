@@ -63,7 +63,7 @@ var AssemblyWorker = /** @class */ (function () {
                 databaseWorker.worker.postMessage({
                     cmd: 'START',
                     data: {
-                        fileInformation: fileInformation,
+                        filename: fileInformation.filename,
                         channel: databaseWorker.channel.port2
                     }
                 }, [databaseWorker.channel.port2]);

@@ -43,6 +43,8 @@ app.get('/requestfile', function (req, res) {
                 var filename = req.query.file;
                 var size = fs.statSync(FILE_DIR + file).size;
                 var mimetype = mime.lookup(file);
+                res.header('Access-Control-Allow-Origin', '*');
+                res.header('Access-Control-Allow-Headers', '*');
                 res.send({ filename: filename, extension: extension, size: size, mimetype: mimetype });
             }
         });
@@ -51,6 +53,7 @@ app.get('/requestfile', function (req, res) {
 app.get('/download', function (req, res) {
     var filename = req.query.filename;
     var extension = req.query.extension;
+    console.log(extension);
     var chunksize = req.query.chunksize;
     var offset = req.query.downloadOffset;
     console.log(offset, chunksize);
@@ -60,6 +63,8 @@ app.get('/download', function (req, res) {
             // console.log(err)
             // console.log(bytesRead)
             console.log(buffer.slice(0, bytesRead));
+            res.header('Access-Control-Allow-Origin', '*');
+            res.header('Access-Control-Allow-Headers', '*');
             res.send(buffer.slice(0, bytesRead));
         });
     });

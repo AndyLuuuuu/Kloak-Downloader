@@ -43,12 +43,14 @@ app.get('/file', (req, res) => {
 app.get('/requestfile', (req, res) => {
   // console.log(req.query);
   fs.readdir(FILE_DIR, (err, files) => {
-    files.forEach(file => {
+    files.forEach((file) => {
       if (file.includes(req.query.file)) {
         const extension = file.split('.')[file.split('.').length - 1]
         const filename = req.query.file
         const { size } = fs.statSync(FILE_DIR + file)
         const mimetype = mime.lookup(file)
+        res.header('Access-Control-Allow-Origin', '*')
+        res.header('Access-Control-Allow-Headers', '*')
         res.send({ filename, extension, size, mimetype })
       }
     })
@@ -58,16 +60,17 @@ app.get('/requestfile', (req, res) => {
 app.get('/download', (req, res) => {
   const filename = req.query.filename
   const extension = req.query.extension
+  console.log(extension)
   const chunksize = req.query.chunksize
   const offset = req.query.downloadOffset
   console.log(offset, chunksize)
   var buffer = Buffer.alloc(Number(chunksize))
 
-  fs.open(__dirname + `/files/${filename}.${extension}`, 'r', function(
+  fs.open(__dirname + `/files/${filename}.${extension}`, 'r', function (
     err,
     fd
   ) {
-    fs.read(fd, buffer, 0, Number(chunksize), Number(offset), function(
+    fs.read(fd, buffer, 0, Number(chunksize), Number(offset), function (
       err,
       bytesRead,
       buffer
@@ -75,6 +78,8 @@ app.get('/download', (req, res) => {
       // console.log(err)
       // console.log(bytesRead)
       console.log(buffer.slice(0, bytesRead))
+      res.header('Access-Control-Allow-Origin', '*')
+      res.header('Access-Control-Allow-Headers', '*')
       res.send(buffer.slice(0, bytesRead))
     })
   })
@@ -95,8 +100,8 @@ app.get('/test', (req, res) => {
   fs.open(
     __dirname + `/files/0e781511-ed5e-42d7-a2da-df4b5a344fb2.mp4`,
     'r',
-    function(err, fd) {
-      fs.read(fd, buffer, 0, 1048576, start, function(err, bytesRead, buffer) {
+    function (err, fd) {
+      fs.read(fd, buffer, 0, 1048576, start, function (err, bytesRead, buffer) {
         console.log(err)
         console.log(bytesRead)
         console.log(buffer.slice(0, bytesRead).length)

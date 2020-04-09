@@ -8,9 +8,8 @@ var DownloadWorker = /** @class */ (function () {
             URL.revokeObjectURL(workerURL);
         };
         this.workerFn = function () {
-            var BASE_URL = self.location.origin + "/download?";
+            var BASE_URL = "http://192.168.0.12:3000/download?";
             var downloadWorkerInfo = null;
-            importScripts(self.location.origin + "/js/jimp.min.js");
             var query = function (data) {
                 return Object.keys(data)
                     .map(function (key) { return (key = key + "=" + data[key]); })
@@ -39,9 +38,9 @@ var DownloadWorker = /** @class */ (function () {
                                     extension: data.extension,
                                     startOffset: data.startOffset,
                                     downloadOffset: data.downloadOffset,
-                                    base64: Buffer.from(new Uint8Array(buffer)).toString('base64')
+                                    buffer: buffer
                                 }
-                            });
+                            }, [buffer]);
                         });
                         break;
                     default:

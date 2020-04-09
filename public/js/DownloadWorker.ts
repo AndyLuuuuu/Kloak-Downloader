@@ -23,16 +23,15 @@ class DownloadWorker {
   }
 
   workerFn = () => {
-    let BASE_URL = `${self.location.origin}/download?`
+    let BASE_URL = `http://192.168.0.12:3000/download?`
     let downloadWorkerInfo: downloadWorkerInfo = null
-    importScripts(`${self.location.origin}/js/jimp.min.js`)
     const query = (data: downloadQueue) => {
       return Object.keys(data)
-        .map(key => (key = `${key}=${data[key]}`))
+        .map((key) => (key = `${key}=${data[key]}`))
         .join('&')
     }
 
-    self.addEventListener('message', e => {
+    self.addEventListener('message', (e) => {
       const cmd = e.data.cmd
       const data = e.data.data
       switch (cmd) {
@@ -42,22 +41,25 @@ class DownloadWorker {
           break
         case 'DOWNLOAD':
           fetch(`${BASE_URL}${query(data)}`)
-            .then(res => {
+            .then((res) => {
               return res.arrayBuffer()
             })
-            .then(buffer => {
+            .then((buffer) => {
               console.log(data)
-              downloadWorkerInfo.channel.postMessage(<downloadWorkerMessage>{
-                cmd: 'SAVE_TO_DATABASE',
-                data: {
-                  downloadWorkerID: downloadWorkerInfo.id,
-                  filename: data.filename,
-                  extension: data.extension,
-                  startOffset: data.startOffset,
-                  downloadOffset: data.downloadOffset,
-                  base64: Buffer.from(new Uint8Array(buffer)).toString('base64')
-                }
-              })
+              downloadWorkerInfo.channel.postMessage(
+                <downloadWorkerMessage>{
+                  cmd: 'SAVE_TO_DATABASE',
+                  data: {
+                    downloadWorkerID: downloadWorkerInfo.id,
+                    filename: data.filename,
+                    extension: data.extension,
+                    startOffset: data.startOffset,
+                    downloadOffset: data.downloadOffset,
+                    buffer,
+                  },
+                },
+                [buffer]
+              )
             })
           break
         default:

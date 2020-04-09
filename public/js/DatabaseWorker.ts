@@ -22,127 +22,105 @@ class DatabaseWorker {
   }
 
   workerFn = () => {
-    let db = null
-    let tx = null
-    let fileStore = null
+    importScripts(`${self.location.origin}/js/jimp.min.js`)
+    let db: IDBDatabase = null
+    let tx: IDBTransaction = null
+    let fileStore: IDBObjectStore = null
     let databaseWorkerChannel: MessagePort = null
 
     function saveToDatabase(db: IDBDatabase, data) {
-      // // console.log(db);
+      const base64 = Buffer.from(data.buffer).toString('base64')
       let tx = db.transaction(data.filename, 'readwrite')
       let store = tx.objectStore(data.filename)
-      store.add(
-        { offset: data.startOffset, data: data.base64 },
-        data.startOffset
-      )
+      store.add({ offset: data.startOffset, data: base64 }, data.startOffset)
     }
 
-    function checkFileExistence(db: IDBDatabase, data) {
-      // console.log(data)
-      tx = db.transaction(data.filename, 'readonly')
-      fileStore = tx.objectStore(data.filename)
-      fileStore.getKey(data.offset).onsuccess = e => {
-        // console.log(Boolean(e.target.result))
-        databaseWorkerChannel.postMessage({
-          cmd: 'CHECKED_FILE',
-          data: { fileExists: Boolean(e.target.result), file: data }
-        })
-      }
-    }
-
-    function checkFileProgress(db: IDBDatabase, data) {
-      tx = db.transaction(data.filename, 'readonly')
-      fileStore = tx.objectStore(data.filename)
-      fileStore.count().onsuccess = e => {
-        // console.log(e.target.result)
-        databaseWorkerChannel.postMessage({
-          cmd: 'CHECKED_FILE_PROGRESS',
-          data: {
-            downloadCount: e.target.result
-          }
-        })
-      }
-    }
-
-    self.addEventListener('message', e => {
+    self.addEventListener('message', (e) => {
       const cmd = e.data.cmd
       const data = e.data.data
       console.log('DATABASE', data)
       switch (cmd) {
         case 'START':
           databaseWorkerChannel = data.channel
-          var req = indexedDB.open(data.fileInformation.filename, 1)
-          console.log(data)
-          req.onupgradeneeded = function(e) {
+          const req = indexedDB.open(data.filename, 1)
+          req.onupgradeneeded = (e) => {
             db = e.target.result
-            let fileStore = db.createObjectStore(
-              data.fileInformation.filename,
-              {
-                autoIncrement: true
-              }
-            )
+            db.createObjectStore(data.filename)
           }
-          req.onsuccess = function(e) {
+          req.onsuccess = (e) => {
             db = e.target.result
             if (e.target.readyState === 'done') {
               data.channel.postMessage({
                 cmd: 'DATABASE_READY',
-                data: { message: 'Database and filestore ready.' }
+                data: { message: 'Database and filestore ready.' },
               })
             }
-            // console.log(db)
           }
-          req.onerror = function(e) {
+          req.onerror = (e) => {
             data.channel.postMessage({
               cmd: 'DATABASE_ERROR',
-              data: { message: 'Database error.' }
+              data: { message: 'Database error.' },
             })
           }
+          break
+        case 'CHECK_PROGRESS':
+          fileStore = db
+            .transaction(data.filename, 'readonly')
+            .objectStore(data.filename)
+          fileStore.get('status').onsuccess = (e) => {
+            databaseWorkerChannel.postMessage({
+              cmd: 'CHECKED_PROGRESS',
+              data: e.target.result,
+            })
+          }
+          break
+        case 'SAVE_PROGRESS':
+          console.log(data)
+          fileStore = db
+            .transaction(data[0].filename, 'readwrite')
+            .objectStore(data[0].filename)
+          fileStore.add(data, 'status')
           break
         case 'REQUEST_FILE_PIECES':
           fileStore = db
             .transaction(data.filename, 'readonly')
             .objectStore(data.filename)
-          fileStore.openCursor().onsuccess = e => {
+          console.log(fileStore)
+          fileStore.openCursor().onsuccess = (e) => {
             let cursor = e.target.result
             if (cursor) {
+              console.log(cursor.key)
               databaseWorkerChannel.postMessage({
                 cmd: 'REQUESTED_FILE_PIECE',
-                data: cursor.value
+                data: cursor.value,
               })
               cursor.continue()
             } else {
               databaseWorkerChannel.postMessage({
                 cmd: 'REQUESTED_FILE_COMPLETE',
-                data
+                data,
               })
             }
           }
-          // console.log(data)
-          break
-        case 'CHECK_FILE':
-          checkFileExistence(db, data)
           break
         case 'SAVE_TO_DATABASE':
           saveToDatabase(db, data)
+          console.log(data)
           // console.log('DATABASEWORKER', data)
           databaseWorkerChannel.postMessage({
             cmd: 'SAVED_TO_DATABASE',
             data: {
               filename: data.filename,
               offset: data.offset,
-              message: 'Successfully saved to database.'
-            }
+              message: 'Successfully saved to database.',
+            },
           })
-        case 'CHECK_FILE_PROGRESS':
-          // console.log(data)
-          checkFileProgress(db, data)
           break
         case 'CLEAR_FILESTORE':
           console.log('I SHOULD CLEAR FILESTORE')
           tx = db.transaction(data.filename, 'readwrite')
           fileStore = tx.objectStore(data.filename)
-          fileStore.clear().onsuccess = e => {
+          fileStore.clear().onsuccess = (e) => {
             console.log('CLEARED')
           }
           break
