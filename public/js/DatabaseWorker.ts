@@ -38,7 +38,6 @@ class DatabaseWorker {
     self.addEventListener('message', (e) => {
       const cmd = e.data.cmd
       const data = e.data.data
-      console.log('DATABASE', data)
       switch (cmd) {
         case 'START':
           databaseWorkerChannel = data.channel
@@ -75,7 +74,6 @@ class DatabaseWorker {
           }
           break
         case 'SAVE_PROGRESS':
-          console.log(data)
           fileStore = db
             .transaction(data[0].filename, 'readwrite')
             .objectStore(data[0].filename)
@@ -85,11 +83,9 @@ class DatabaseWorker {
           fileStore = db
             .transaction(data.filename, 'readonly')
             .objectStore(data.filename)
-          console.log(fileStore)
           fileStore.openCursor().onsuccess = (e) => {
             let cursor = e.target.result
             if (cursor) {
-              console.log(cursor.key)
               databaseWorkerChannel.postMessage({
                 cmd: 'REQUESTED_FILE_PIECE',
                 data: cursor.value,
@@ -105,8 +101,6 @@ class DatabaseWorker {
           break
         case 'SAVE_TO_DATABASE':
           saveToDatabase(db, data)
-          console.log(data)
-          // console.log('DATABASEWORKER', data)
           databaseWorkerChannel.postMessage({
             cmd: 'SAVED_TO_DATABASE',
             data: {
@@ -117,12 +111,9 @@ class DatabaseWorker {
           })
           break
         case 'CLEAR_FILESTORE':
-          console.log('I SHOULD CLEAR FILESTORE')
           tx = db.transaction(data.filename, 'readwrite')
           fileStore = tx.objectStore(data.filename)
-          fileStore.clear().onsuccess = (e) => {
-            console.log('CLEARED')
-          }
+          fileStore.clear().onsuccess = (e) => {}
           break
         default:
           break

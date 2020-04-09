@@ -37,7 +37,6 @@ export default class AssemblyWorker {
       const data = e.data.data
       switch (cmd) {
         case 'DATABASE_READY':
-          console.log(fileInformation)
           assembledFile = new Uint8Array(fileInformation.size)
           databaseWorker.worker.postMessage({
             cmd: 'REQUEST_FILE_PIECES',
@@ -45,17 +44,12 @@ export default class AssemblyWorker {
           })
           break
         case 'REQUESTED_FILE_PIECE':
-          console.log(data.offset)
-          console.log(assembledFile.length)
           assembledFile.set(Buffer.from(data.data, 'base64'), data.offset)
-          // console.log(assembledFile)
-          // console.log(data)
           break
         case 'REQUESTED_FILE_COMPLETE':
           const file = new Blob([assembledFile.buffer], {
             type: data.mimetype,
           })
-          console.log(data)
           const fileURL = URL.createObjectURL(file)
           self.postMessage({ cmd: 'COMPLETE_FILE', data: { url: fileURL } })
           databaseWorker.worker.postMessage({
@@ -63,9 +57,6 @@ export default class AssemblyWorker {
             data: fileInformation,
           })
           assembledFile = null
-          // databaseWorker.worker.terminate()
-          // self.close()
-          console.log(file)
           break
         default:
           break
@@ -97,7 +88,6 @@ export default class AssemblyWorker {
         case 'START':
           fileInformation = data
           setupDatabaseWorker()
-          console.log(data)
           break
         case 'NEXT':
           fileInformation = data

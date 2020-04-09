@@ -55,7 +55,6 @@ var Downloader = /** @class */ (function () {
                     _this.checkDownloadStatus();
                     break;
                 case 'COMPLETE_FILE':
-                    console.log('COMPLETE FILE');
                     _this.mainCallback({
                         cmd: 'COMPLETE_FILE',
                         data: {

@@ -77,7 +77,6 @@ export default class Downloader {
         this.checkDownloadStatus()
         break
       case 'COMPLETE_FILE':
-        console.log('COMPLETE FILE')
         this.mainCallback({
           cmd: 'COMPLETE_FILE',
           data: {

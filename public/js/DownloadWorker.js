@@ -20,7 +20,6 @@ var DownloadWorker = /** @class */ (function () {
                 var data = e.data.data;
                 switch (cmd) {
                     case 'START':
-                        console.log(data);
                         downloadWorkerInfo = data;
                         break;
                     case 'DOWNLOAD':
@@ -29,7 +28,6 @@ var DownloadWorker = /** @class */ (function () {
                             return res.arrayBuffer();
                         })
                             .then(function (buffer) {
-                            console.log(data);
                             downloadWorkerInfo.channel.postMessage({
                                 cmd: 'SAVE_TO_DATABASE',
                                 data: {

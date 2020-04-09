@@ -36,7 +36,6 @@ class DownloadWorker {
       const data = e.data.data
       switch (cmd) {
         case 'START':
-          console.log(data)
           downloadWorkerInfo = data
           break
         case 'DOWNLOAD':
@@ -45,7 +44,6 @@ class DownloadWorker {
               return res.arrayBuffer()
             })
             .then((buffer) => {
-              console.log(data)
               downloadWorkerInfo.channel.postMessage(
                 <downloadWorkerMessage>{
                   cmd: 'SAVE_TO_DATABASE',

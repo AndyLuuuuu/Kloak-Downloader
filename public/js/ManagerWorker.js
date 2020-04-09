@@ -123,7 +123,6 @@ var ManagerWorker = /** @class */ (function () {
                 var data = e.data.data;
                 switch (cmd) {
                     case 'START':
-                        console.log(data);
                         databaseWorker.worker.postMessage({
                             cmd: 'START',
                             data: {
@@ -143,10 +142,8 @@ var ManagerWorker = /** @class */ (function () {
                             cmd: 'SAVE_PROGRESS',
                             data: data
                         });
-                        console.log(data);
                         break;
                     case 'REQUEST DOWNLOAD':
-                        console.log(data);
                         downloadFile(data);
                         break;
                     default:

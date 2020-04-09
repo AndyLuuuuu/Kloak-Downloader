@@ -20,7 +20,6 @@ var AssemblyWorker = /** @class */ (function () {
                 var data = e.data.data;
                 switch (cmd) {
                     case 'DATABASE_READY':
-                        console.log(fileInformation);
                         assembledFile = new Uint8Array(fileInformation.size);
                         databaseWorker.worker.postMessage({
                             cmd: 'REQUEST_FILE_PIECES',
@@ -28,17 +27,12 @@ var AssemblyWorker = /** @class */ (function () {
                         });
                         break;
                     case 'REQUESTED_FILE_PIECE':
-                        console.log(data.offset);
-                        console.log(assembledFile.length);
                         assembledFile.set(Buffer.from(data.data, 'base64'), data.offset);
-                        // console.log(assembledFile)
-                        // console.log(data)
                         break;
                     case 'REQUESTED_FILE_COMPLETE':
                         var file = new Blob([assembledFile.buffer], {
                             type: data.mimetype
                         });
-                        console.log(data);
                         var fileURL = URL.createObjectURL(file);
                         self.postMessage({ cmd: 'COMPLETE_FILE', data: { url: fileURL } });
                         databaseWorker.worker.postMessage({
@@ -46,9 +40,6 @@ var AssemblyWorker = /** @class */ (function () {
                             data: fileInformation
                         });
                         assembledFile = null;
-                        // databaseWorker.worker.terminate()
-                        // self.close()
-                        console.log(file);
                         break;
                     default:
                         break;
@@ -75,7 +66,6 @@ var AssemblyWorker = /** @class */ (function () {
                     case 'START':
                         fileInformation = data;
                         setupDatabaseWorker();
-                        console.log(data);
                         break;
                     case 'NEXT':
                         fileInformation = data;

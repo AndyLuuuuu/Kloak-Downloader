@@ -21,7 +21,6 @@ var DatabaseWorker = /** @class */ (function () {
             self.addEventListener('message', function (e) {
                 var cmd = e.data.cmd;
                 var data = e.data.data;
-                console.log('DATABASE', data);
                 switch (cmd) {
                     case 'START':
                         databaseWorkerChannel = data.channel;
@@ -58,7 +57,6 @@ var DatabaseWorker = /** @class */ (function () {
                         };
                         break;
                     case 'SAVE_PROGRESS':
-                        console.log(data);
                         fileStore = db
                             .transaction(data[0].filename, 'readwrite')
                             .objectStore(data[0].filename);
@@ -68,11 +66,9 @@ var DatabaseWorker = /** @class */ (function () {
                         fileStore = db
                             .transaction(data.filename, 'readonly')
                             .objectStore(data.filename);
-                        console.log(fileStore);
                         fileStore.openCursor().onsuccess = function (e) {
                             var cursor = e.target.result;
                             if (cursor) {
-                                console.log(cursor.key);
                                 databaseWorkerChannel.postMessage({
                                     cmd: 'REQUESTED_FILE_PIECE',
                                     data: cursor.value
@@ -89,8 +85,6 @@ var DatabaseWorker = /** @class */ (function () {
                         break;
                     case 'SAVE_TO_DATABASE':
                         saveToDatabase(db, data);
-                        console.log(data);
-                        // console.log('DATABASEWORKER', data)
                         databaseWorkerChannel.postMessage({
                             cmd: 'SAVED_TO_DATABASE',
                             data: {
@@ -101,12 +95,9 @@ var DatabaseWorker = /** @class */ (function () {
                         });
                         break;
                     case 'CLEAR_FILESTORE':
-                        console.log('I SHOULD CLEAR FILESTORE');
                         tx = db.transaction(data.filename, 'readwrite');
                         fileStore = tx.objectStore(data.filename);
-                        fileStore.clear().onsuccess = function (e) {
-                            console.log('CLEARED');
-                        };
+                        fileStore.clear().onsuccess = function (e) { };
                         break;
                     default:
                         break;

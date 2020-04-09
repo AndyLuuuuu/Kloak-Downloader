@@ -148,7 +148,6 @@ export default class ManagerWorker {
       const data = e.data.data
       switch (cmd) {
         case 'START':
-          console.log(data)
           databaseWorker.worker.postMessage(
             {
               cmd: 'START',
@@ -171,10 +170,8 @@ export default class ManagerWorker {
             cmd: 'SAVE_PROGRESS',
             data,
           })
-          console.log(data)
           break
         case 'REQUEST DOWNLOAD':
-          console.log(data)
           downloadFile(data)
           break
         default:
