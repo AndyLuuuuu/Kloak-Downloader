@@ -46,7 +46,7 @@ class DownloadWorker {
             .then((buffer) => {
               downloadWorkerInfo.channel.postMessage(
                 <downloadWorkerMessage>{
-                  cmd: 'SAVE_TO_DATABASE',
+                  cmd: 'SEGMENT_COMPLETE',
                   data: {
                     downloadWorkerID: downloadWorkerInfo.id,
                     filename: data.filename,

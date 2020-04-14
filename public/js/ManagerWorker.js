@@ -25,19 +25,19 @@ var ManagerWorker = /** @class */ (function () {
                     case 'CHECKED_PROGRESS':
                         self.postMessage({ cmd: 'CHECKED_PROGRESS', data: data });
                         break;
-                    case 'SAVE_TO_DATABASE':
+                    case 'SEGMENT_COMPLETE':
                         databaseWorker.worker.postMessage({
                             cmd: cmd,
                             data: data
-                        });
+                        }, [data.buffer]);
                         downloadWorkers[data.downloadWorkerID].state = 'IDLE';
                         break;
                     case 'SAVED_TO_DATABASE':
                         self.postMessage({
                             cmd: 'SEGMENT_COMPLETE',
-                            data: { filename: data.filename, offset: data.offset }
-                        });
-                        log(data.message);
+                            data: data
+                        }, [data.buffer]);
+                        log('Segment saved to database.');
                         break;
                     case 'DATABASE_READY':
                         self.postMessage({

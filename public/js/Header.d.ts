@@ -32,7 +32,7 @@ interface managerMessage {
 }
 
 interface downloadWorkerMessage {
-  cmd: 'SAVE_TO_DATABASE'
+  cmd: 'SEGMENT_COMPLETE'
   data: {
     downloadWorkerID: number
     filename: string

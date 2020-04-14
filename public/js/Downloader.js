@@ -1,7 +1,7 @@
 import ManagerWorker from './ManagerWorker.js';
 import AssemblyWorker from './AssemblyWorker.js';
 var Downloader = /** @class */ (function () {
-    function Downloader(filename, callback) {
+    function Downloader(filename, isVideo, callback) {
         var _this = this;
         this.DOWNLOAD_BASE_URL = "http://192.168.0.12:3000/requestfile?file=";
         this.filename = '';
@@ -13,6 +13,7 @@ var Downloader = /** @class */ (function () {
         this.downloadQueue = [];
         this.downloadState = 'stop';
         this.chunksize = 2097152;
+        this.isVideo = false;
         this.log = function (message) {
             if (_this.DEBUG) {
                 console.log(message);
@@ -23,7 +24,6 @@ var Downloader = /** @class */ (function () {
             var data = e.data.data;
             switch (cmd) {
                 case 'SYSTEM_READY':
-                    console.log('lol');
                     _this.mainCallback({
                         cmd: 'SYSTEM_READY',
                         data: { msg: data, self: _this }
@@ -38,8 +38,6 @@ var Downloader = /** @class */ (function () {
                 case 'CHECKED_PROGRESS':
                     if (data) {
                         _this.filePieces = data;
-                        console.log(data);
-                        console.log(_this.filePieces);
                     }
                     else {
                         _this.setupFilePieces(_this.file);
@@ -53,13 +51,26 @@ var Downloader = /** @class */ (function () {
                 case 'SEGMENT_COMPLETE':
                     _this.currentFilePiece.downloadCount++;
                     _this.checkDownloadStatus();
+                    if (_this.isVideo) {
+                        _this.mainCallback({ cmd: 'VIDEO_SEGMENT', data: data });
+                    }
                     break;
                 case 'COMPLETE_FILE':
+                    var script = undefined;
+                    if (_this.filePieces.length <= 0) {
+                        script = new Blob([
+                            "#!/bin/bash\ncat " + _this.currentFilePiece.filename + "-*." + _this.currentFilePiece.extension + " > file." + _this.currentFilePiece.extension,
+                        ], {
+                            type: 'application/x-shellscript'
+                        });
+                    }
                     _this.mainCallback({
                         cmd: 'COMPLETE_FILE',
                         data: {
                             url: data.url,
-                            filename: _this.currentFilePiece.filename + "-" + _this.currentFilePiece.filepiece
+                            script: script ? URL.createObjectURL(script) : null,
+                            filename: _this.currentFilePiece.filename,
+                            filepiece: _this.currentFilePiece.filepiece
                         }
                     });
                     if (_this.filePieces.length > 0) {
@@ -124,7 +135,6 @@ var Downloader = /** @class */ (function () {
         };
         this.pushQueue = function () {
             return setInterval(function () {
-                console.log(_this.downloadState);
                 if (_this.downloadState === 'start') {
                     if (_this.downloadQueue.length < 20) {
                         if (_this.currentFilePiece.downloadCount < _this.currentFilePiece.parts) {
@@ -200,6 +210,7 @@ var Downloader = /** @class */ (function () {
         if (!window.indexedDB) {
             alert("Your browser doesn't support a stable version of IndexedDB.\nWe recommend you use the Chrome browser.");
         }
+        this.isVideo = isVideo;
         this.managerWorker = new ManagerWorker().getWorker();
         this.managerWorker.onmessage = this.messageChannel;
         this.managerWorker.postMessage({ cmd: 'START', data: filename });

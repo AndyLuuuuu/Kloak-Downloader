@@ -17,13 +17,15 @@ export default class Downloader {
   private checkDownloadInterval
   private downloadState: 'start' | 'pause' | 'stop' = 'stop'
   private chunksize: number = 2097152
+  private isVideo: boolean = false
   private mainCallback: Function
-  constructor(filename: string, callback: Function) {
+  constructor(filename: string, isVideo: boolean, callback: Function) {
     if (!window.indexedDB) {
       alert(
         "Your browser doesn't support a stable version of IndexedDB.\nWe recommend you use the Chrome browser."
       )
     }
+    this.isVideo = isVideo
     this.managerWorker = new ManagerWorker().getWorker()
     this.managerWorker.onmessage = this.messageChannel
     this.managerWorker.postMessage({ cmd: 'START', data: filename })
@@ -44,7 +46,6 @@ export default class Downloader {
     const data = e.data.data
     switch (cmd) {
       case 'SYSTEM_READY':
-        console.log('lol')
         this.mainCallback({
           cmd: 'SYSTEM_READY',
           data: { msg: data, self: this },
@@ -61,8 +62,6 @@ export default class Downloader {
       case 'CHECKED_PROGRESS':
         if (data) {
           this.filePieces = data
-          console.log(data)
-          console.log(this.filePieces)
         } else {
           this.setupFilePieces(this.file)
           this.managerWorker.postMessage({
@@ -75,13 +74,29 @@ export default class Downloader {
       case 'SEGMENT_COMPLETE':
         this.currentFilePiece.downloadCount++
         this.checkDownloadStatus()
+        if (this.isVideo) {
+          this.mainCallback({ cmd: 'VIDEO_SEGMENT', data })
+        }
         break
       case 'COMPLETE_FILE':
+        let script: Blob = undefined
+        if (this.filePieces.length <= 0) {
+          script = new Blob(
+            [
+              `#!/bin/bash\ncat ${this.currentFilePiece.filename}-*.${this.currentFilePiece.extension} > file.${this.currentFilePiece.extension}`,
+            ],
+            {
+              type: 'application/x-shellscript',
+            }
+          )
+        }
         this.mainCallback({
           cmd: 'COMPLETE_FILE',
           data: {
             url: data.url,
-            filename: `${this.currentFilePiece.filename}-${this.currentFilePiece.filepiece}`,
+            script: script ? URL.createObjectURL(script) : null,
+            filename: this.currentFilePiece.filename,
+            filepiece: this.currentFilePiece.filepiece,
           },
         })
         if (this.filePieces.length > 0) {
@@ -150,7 +165,6 @@ export default class Downloader {
 
   pushQueue = () => {
     return setInterval(() => {
-      console.log(this.downloadState)
       if (this.downloadState === 'start') {
         if (this.downloadQueue.length < 20) {
           if (

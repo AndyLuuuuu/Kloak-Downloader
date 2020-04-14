@@ -83,16 +83,12 @@ var DatabaseWorker = /** @class */ (function () {
                             }
                         };
                         break;
-                    case 'SAVE_TO_DATABASE':
+                    case 'SEGMENT_COMPLETE':
                         saveToDatabase(db, data);
                         databaseWorkerChannel.postMessage({
                             cmd: 'SAVED_TO_DATABASE',
-                            data: {
-                                filename: data.filename,
-                                offset: data.offset,
-                                message: 'Successfully saved to database.'
-                            }
-                        });
+                            data: data
+                        }, [data.buffer]);
                         break;
                     case 'CLEAR_FILESTORE':
                         tx = db.transaction(data.filename, 'readwrite');

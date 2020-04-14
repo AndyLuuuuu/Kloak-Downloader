@@ -4,13 +4,15 @@ html
   link(href="../css/downloader.css" rel="stylesheet")
   body
       .downloadWrapper
-        .item(data-filename="0e781511-ed5e-42d7-a2da-df4b5a344fb2")
+        .item(data-filename="0e781511-ed5e-42d7-a2da-df4b5a344fb2", data-isVideo="true")
           img.fileicon(src="../images/mp4-icon.svg")
           p.filedesc="The Lion King (2019)"
         .item(data-filename="53481ea9-5c7e-47d4-8cf0-c3a3246e6507")
           img.fileicon(src="../images/zip-icon.svg")
           p.filedesc="ZippedDocs"
       a#hiddendl(style="display: none" download)
+      .videoWrapper.hide#videoWrapper
+        video.video#video(controls autoplay)
       script(type="module" src="../js/AssemblyWorker.js")
       script(type="module" src="../js/ManagerWorker.js")
       script(type="module" src="../js/Downloader.js")

@@ -29,7 +29,7 @@ var DownloadWorker = /** @class */ (function () {
                         })
                             .then(function (buffer) {
                             downloadWorkerInfo.channel.postMessage({
-                                cmd: 'SAVE_TO_DATABASE',
+                                cmd: 'SEGMENT_COMPLETE',
                                 data: {
                                     downloadWorkerID: downloadWorkerInfo.id,
                                     filename: data.filename,
