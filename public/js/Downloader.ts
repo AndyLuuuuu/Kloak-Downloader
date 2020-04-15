@@ -115,7 +115,7 @@ export default class Downloader {
 
   setupFilePieces = (file) => {
     let filesize = file.size
-    while (filesize >= this.MAX_FILE_SIZE) {
+    const createFilePiece = () => {
       this.filePieces.push({
         filepiece: this.filePieces.length,
         filename: file.filename,
@@ -131,24 +131,14 @@ export default class Downloader {
             : 0,
         mimetype: this.file.mimetype,
       })
+    }
+
+    while (filesize >= this.MAX_FILE_SIZE) {
+      createFilePiece()
       filesize -= this.MAX_FILE_SIZE
     }
     if (filesize < this.MAX_FILE_SIZE) {
-      this.filePieces.push({
-        filepiece: this.filePieces.length,
-        filename: file.filename,
-        extension: file.extension,
-        size: filesize,
-        parts: Math.ceil(filesize / this.chunksize),
-        chunksize: this.chunksize,
-        downloadCount: 0,
-        startOffset: 0,
-        downloadOffset:
-          this.filePieces.length > 0
-            ? this.filePieces.length * this.MAX_FILE_SIZE
-            : 0,
-        mimetype: this.file.mimetype,
-      })
+      createFilePiece()
     }
   }
 
@@ -194,7 +184,7 @@ export default class Downloader {
     return setInterval(() => {
       if (this.downloadState === 'start') {
         if (this.downloadQueue.length > 0) {
-          const file = this.shuffle(this.downloadQueue).shift()
+          const file = this.downloadQueue.shift()
           const message: managerMessage = {
             cmd: 'REQUEST DOWNLOAD',
             data: file,

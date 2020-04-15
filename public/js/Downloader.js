@@ -89,7 +89,7 @@ var Downloader = /** @class */ (function () {
         };
         this.setupFilePieces = function (file) {
             var filesize = file.size;
-            while (filesize >= _this.MAX_FILE_SIZE) {
+            var createFilePiece = function () {
                 _this.filePieces.push({
                     filepiece: _this.filePieces.length,
                     filename: file.filename,
@@ -104,23 +104,13 @@ var Downloader = /** @class */ (function () {
                         : 0,
                     mimetype: _this.file.mimetype
                 });
+            };
+            while (filesize >= _this.MAX_FILE_SIZE) {
+                createFilePiece();
                 filesize -= _this.MAX_FILE_SIZE;
             }
             if (filesize < _this.MAX_FILE_SIZE) {
-                _this.filePieces.push({
-                    filepiece: _this.filePieces.length,
-                    filename: file.filename,
-                    extension: file.extension,
-                    size: filesize,
-                    parts: Math.ceil(filesize / _this.chunksize),
-                    chunksize: _this.chunksize,
-                    downloadCount: 0,
-                    startOffset: 0,
-                    downloadOffset: _this.filePieces.length > 0
-                        ? _this.filePieces.length * _this.MAX_FILE_SIZE
-                        : 0,
-                    mimetype: _this.file.mimetype
-                });
+                createFilePiece();
             }
         };
         this.fetchFileInformation = function (url) {
@@ -161,7 +151,7 @@ var Downloader = /** @class */ (function () {
             return setInterval(function () {
                 if (_this.downloadState === 'start') {
                     if (_this.downloadQueue.length > 0) {
-                        var file = _this.shuffle(_this.downloadQueue).shift();
+                        var file = _this.downloadQueue.shift();
                         var message = {
                             cmd: 'REQUEST DOWNLOAD',
                             data: file

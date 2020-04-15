@@ -8,13 +8,14 @@ const hiddendl = document.getElementById('hiddendl')
 const files = document.querySelectorAll('.item')
 const downloads = []
 const videoSegments = []
+let hasInit = false
 console.log(files)
 
 const log = (message: string) => {
   console.log(`<${new Date().toLocaleString()}> ${message}`)
 }
 
-const callback = (e) => {
+const callback = async (e) => {
   const cmd = e.cmd
   const data = e.data
   switch (cmd) {
@@ -32,33 +33,30 @@ const callback = (e) => {
       downloads[data.filename]['finished'] = true
       break
     case 'VIDEO_SEGMENT':
-      videoSegments.push(URL.createObjectURL(new Blob([data.buffer])))
-      console.log(videoSegments)
+      const blob = new Blob([data.buffer])
+      new Response(blob).arrayBuffer().then((buff) => {
+        videoSourceBuffer.appendBuffer(buff)
+      })
       break
     case 'COMPLETE_FILE':
       console.log(data)
+      hiddendl.href = data.url
+      hiddendl.download = `${data.filename}-${data.filepiece}`
+      hiddendl.click()
       if (data.script) {
         hiddendl.href = data.script
         hiddendl.download = `${data.filename}-assembler`
         hiddendl.click()
       }
-      hiddendl.href = data.url
-      hiddendl.download = `${data.filename}-${data.filepiece}`
-      hiddendl.click()
     default:
       break
   }
 }
 
-function fetchAndAppend(url, cb) {
-  console.log(url)
-  fetch(url)
-    .then((res) => {
-      return res.arrayBuffer()
-    })
-    .then((buff) => {
-      cb(buff)
-    })
+function fetchAndAppend(blob, sb) {
+  new Response(blob).arrayBuffer().then((buff) => {
+    sb.appendBuffer(buff)
+  })
 }
 
 function setupMediasource() {
@@ -67,25 +65,18 @@ function setupMediasource() {
   console.log(MediaSource.isTypeSupported('video/mp4; codecs="avc1.4D401F"'))
   ms.addEventListener('sourceopen', () => {
     videoSourceBuffer = ms.addSourceBuffer('video/mp4; codecs="avc1.4D401F"')
-    let video
-    function fetchSegment() {
-      video = videoSegments.shift()
-      if (video) {
-        fetchAndAppend(video, (buff) => {
-          videoSourceBuffer.appendBuffer(buff)
-        })
-      } else {
-        setTimeout(() => {
-          fetchSegment()
-        }, 2000)
-      }
-    }
-    fetchSegment()
-    // let video = videoSegments.shift()
+    let video = videoSegments.shift()
+    fetchAndAppend(video, videoSourceBuffer)
+    // videoSourceBuffer.addEventListener('updateend', () => {
+    //   // console.log('wtf')
+    //   // let video = videoSegments.shift()
+    //   // console.log(videoSegments)
+    //   // fetchAndAppend(video, videoSourceBuffer)
+    // })
     // if (video) {
     //   fetchAndAppend(video, videoSourceBuffer)
     // }
-    // videoSourceBuffer.addEventListener('update', () => {
+    // videoSourceBuffer.addEventListener('updateend', () => {
     //   video = videoSegments.shift()
     //   if (video) {
     //     fetchAndAppend(video, videoSourceBuffer)
@@ -97,16 +88,16 @@ function setupMediasource() {
 files.forEach((file) => {
   file.addEventListener('click', (e) => {
     console.log(e.target.dataset)
-    // const isVideo = e.target.dataset.isvideo ? true : false
-    // console.log(isVideo)
-    // if (isVideo) {
-    //   videoWrapper.classList.remove('hide')
-    //   setupMediasource()
-    //   downloads.push(
-    //     new Downloader(e.target.dataset['filename'], isVideo, callback)
-    //   )
-    //   return
-    // }
+    const isVideo = e.target.dataset.isvideo ? true : false
+    console.log(isVideo)
+    if (isVideo) {
+      videoWrapper.classList.remove('hide')
+      setupMediasource()
+      downloads.push(
+        new Downloader(e.target.dataset['filename'], isVideo, callback)
+      )
+      return
+    }
     downloads.push(
       new Downloader(e.target.dataset['filename'], false, callback)
     )
