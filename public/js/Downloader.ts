@@ -6,6 +6,7 @@ export default class Downloader {
   private filename = ''
   private DEBUG = false
   private MAX_FILE_SIZE = 314572800
+  // private MAX_FILE_SIZE = 104857600
   private file: fileInformation
   private filePieces: Array<filePiece> = []
   private currentFilePiece: filePiece = null
@@ -79,6 +80,7 @@ export default class Downloader {
         }
         break
       case 'COMPLETE_FILE':
+        console.log('COMPLETE')
         let script: Blob = undefined
         if (this.filePieces.length <= 0) {
           script = new Blob(
@@ -197,19 +199,23 @@ export default class Downloader {
 
   checkDownloadStatus = () => {
     if (this.currentFilePiece.downloadCount >= this.currentFilePiece.parts) {
-      if (this.assemblyWorker === null) {
-        this.assemblyWorker = new AssemblyWorker().getWorker()
-        this.assemblyWorker.onmessage = this.messageChannel
-        this.assemblyWorker.postMessage({
-          cmd: 'START',
-          data: this.currentFilePiece,
-        })
-      } else {
-        this.assemblyWorker.postMessage({
-          cmd: 'NEXT',
-          data: this.currentFilePiece,
-        })
-      }
+      this.managerWorker.postMessage({
+        cmd: 'ASSEMBLE_FILE',
+        data: this.currentFilePiece,
+      })
+      // if (this.assemblyWorker === null) {
+      //   this.assemblyWorker = new AssemblyWorker().getWorker()
+      //   this.assemblyWorker.onmessage = this.messageChannel
+      //   this.assemblyWorker.postMessage({
+      //     cmd: 'START',
+      //     data: this.currentFilePiece,
+      //   })
+      // } else {
+      //   this.assemblyWorker.postMessage({
+      //     cmd: 'NEXT',
+      //     data: this.currentFilePiece,
+      //   })
+      // }
     }
   }
 

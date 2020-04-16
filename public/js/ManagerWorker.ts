@@ -1,4 +1,3 @@
-// import DownloadWorker from './DownloadWorker.js';
 export default class ManagerWorker {
   private worker: Worker
   constructor() {
@@ -23,6 +22,7 @@ export default class ManagerWorker {
   }
 
   workerFn = () => {
+    importScripts(`${self.location.origin}/js/AssemblyWorker.js`)
     importScripts(`${self.location.origin}/js/DownloadWorker.js`)
     importScripts(`${self.location.origin}/js/DatabaseWorker.js`)
     const downloadWorkers: Array<downloadWorker> = []
@@ -34,6 +34,11 @@ export default class ManagerWorker {
     const databaseWorker = {
       worker: new DatabaseWorker().getWorker(),
       channel: new MessageChannel(),
+    }
+
+    const assemblyWorker = {
+      worker: null,
+      channel: null,
     }
 
     const messageChannel = (e) => {
@@ -77,6 +82,11 @@ export default class ManagerWorker {
           })
           log(data.message)
           break
+        case 'COMPLETE_FILE':
+          self.postMessage({
+            cmd: 'COMPLETE_FILE',
+            data,
+          })
         default:
           break
       }
@@ -164,6 +174,19 @@ export default class ManagerWorker {
             },
             [databaseWorker.channel.port2]
           )
+          assemblyWorker.worker = new AssemblyWorker().getWorker()
+          assemblyWorker.channel = new MessageChannel()
+          assemblyWorker.channel.port1.onmessage = messageChannel
+          assemblyWorker.worker.postMessage(
+            {
+              cmd: 'START',
+              data: {
+                filename: data,
+                channel: assemblyWorker.channel.port2,
+              },
+            },
+            [assemblyWorker.channel.port2]
+          )
           break
         case 'CHECK_PROGRESS':
           databaseWorker.worker.postMessage({
@@ -180,6 +203,11 @@ export default class ManagerWorker {
         case 'REQUEST DOWNLOAD':
           downloadFile(data)
           break
+        case 'ASSEMBLE_FILE':
+          assemblyWorker.worker.postMessage({
+            cmd: 'ASSEMBLE_FILE',
+            data,
+          })
         default:
           break
       }

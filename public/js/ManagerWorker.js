@@ -1,4 +1,3 @@
-// import DownloadWorker from './DownloadWorker.js';
 var ManagerWorker = /** @class */ (function () {
     function ManagerWorker() {
         var _this = this;
@@ -8,6 +7,7 @@ var ManagerWorker = /** @class */ (function () {
             URL.revokeObjectURL(workerURL);
         };
         this.workerFn = function () {
+            importScripts(self.location.origin + "/js/AssemblyWorker.js");
             importScripts(self.location.origin + "/js/DownloadWorker.js");
             importScripts(self.location.origin + "/js/DatabaseWorker.js");
             var downloadWorkers = [];
@@ -17,6 +17,10 @@ var ManagerWorker = /** @class */ (function () {
             var databaseWorker = {
                 worker: new DatabaseWorker().getWorker(),
                 channel: new MessageChannel()
+            };
+            var assemblyWorker = {
+                worker: null,
+                channel: null
             };
             var messageChannel = function (e) {
                 var cmd = e.data.cmd;
@@ -53,6 +57,11 @@ var ManagerWorker = /** @class */ (function () {
                         });
                         log(data.message);
                         break;
+                    case 'COMPLETE_FILE':
+                        self.postMessage({
+                            cmd: 'COMPLETE_FILE',
+                            data: data
+                        });
                     default:
                         break;
                 }
@@ -130,6 +139,16 @@ var ManagerWorker = /** @class */ (function () {
                                 filename: data
                             }
                         }, [databaseWorker.channel.port2]);
+                        assemblyWorker.worker = new AssemblyWorker().getWorker();
+                        assemblyWorker.channel = new MessageChannel();
+                        assemblyWorker.channel.port1.onmessage = messageChannel;
+                        assemblyWorker.worker.postMessage({
+                            cmd: 'START',
+                            data: {
+                                filename: data,
+                                channel: assemblyWorker.channel.port2
+                            }
+                        }, [assemblyWorker.channel.port2]);
                         break;
                     case 'CHECK_PROGRESS':
                         databaseWorker.worker.postMessage({
@@ -146,6 +165,11 @@ var ManagerWorker = /** @class */ (function () {
                     case 'REQUEST DOWNLOAD':
                         downloadFile(data);
                         break;
+                    case 'ASSEMBLE_FILE':
+                        assemblyWorker.worker.postMessage({
+                            cmd: 'ASSEMBLE_FILE',
+                            data: data
+                        });
                     default:
                         break;
                 }

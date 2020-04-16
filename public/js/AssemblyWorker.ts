@@ -1,4 +1,4 @@
-export default class AssemblyWorker {
+class AssemblyWorker {
   private worker: Worker
   constructor() {
     this.log(`AssemblyWorker created.`)
@@ -25,10 +25,11 @@ export default class AssemblyWorker {
     importScripts(`${self.location.origin}/js/DatabaseWorker.js`)
     importScripts(`${self.location.origin}/js/jimp.min.js`)
     let databaseWorker = {
-      worker: new DatabaseWorker().getWorker(),
-      channel: new MessageChannel(),
+      worker: null,
+      channel: null,
     }
 
+    let assemblyWorkerChannel = null
     let fileInformation: filePiece = null
     let assembledFile = null
 
@@ -37,21 +38,26 @@ export default class AssemblyWorker {
       const data = e.data.data
       switch (cmd) {
         case 'DATABASE_READY':
-          assembledFile = new Uint8Array(fileInformation.size)
-          databaseWorker.worker.postMessage({
-            cmd: 'REQUEST_FILE_PIECES',
-            data: fileInformation,
-          })
+          // assembledFile = new Uint8Array(fileInformation.size)
+          // databaseWorker.worker.postMessage({
+          //   cmd: 'REQUEST_FILE_PIECES',
+          //   data: fileInformation,
+          // })
           break
         case 'REQUESTED_FILE_PIECE':
+          console.log(data)
           assembledFile.set(Buffer.from(data.data, 'base64'), data.offset)
           break
         case 'REQUESTED_FILE_COMPLETE':
           const file = new Blob([assembledFile.buffer], {
-            type: data.mimetype,
+            type: 'application/octet-stream',
           })
+          console.log(file)
           const fileURL = URL.createObjectURL(file)
-          self.postMessage({ cmd: 'COMPLETE_FILE', data: { url: fileURL } })
+          assemblyWorkerChannel.postMessage({
+            cmd: 'COMPLETE_FILE',
+            data: { url: fileURL },
+          })
           databaseWorker.worker.postMessage({
             cmd: 'CLEAR_FILESTORE',
             data: fileInformation,
@@ -63,7 +69,7 @@ export default class AssemblyWorker {
       }
     }
 
-    const setupDatabaseWorker = () => {
+    const setupDatabaseWorker = (filename: string) => {
       databaseWorker = {
         worker: new DatabaseWorker().getWorker(),
         channel: new MessageChannel(),
@@ -73,7 +79,7 @@ export default class AssemblyWorker {
         {
           cmd: 'START',
           data: {
-            filename: fileInformation.filename,
+            filename,
             channel: databaseWorker.channel.port2,
           },
         },
@@ -86,10 +92,10 @@ export default class AssemblyWorker {
       const data = e.data.data
       switch (cmd) {
         case 'START':
-          fileInformation = data
-          setupDatabaseWorker()
+          setupDatabaseWorker(data.filename)
+          assemblyWorkerChannel = data.channel
           break
-        case 'NEXT':
+        case 'ASSEMBLE_FILE':
           fileInformation = data
           assembledFile = new Uint8Array(fileInformation.size)
           databaseWorker.worker.postMessage({

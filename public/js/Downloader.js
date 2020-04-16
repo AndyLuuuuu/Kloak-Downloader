@@ -1,5 +1,4 @@
 import ManagerWorker from './ManagerWorker.js';
-import AssemblyWorker from './AssemblyWorker.js';
 var Downloader = /** @class */ (function () {
     function Downloader(filename, isVideo, callback) {
         var _this = this;
@@ -56,6 +55,7 @@ var Downloader = /** @class */ (function () {
                     }
                     break;
                 case 'COMPLETE_FILE':
+                    console.log('COMPLETE');
                     var script = undefined;
                     if (_this.filePieces.length <= 0) {
                         script = new Blob([
@@ -163,20 +163,23 @@ var Downloader = /** @class */ (function () {
         };
         this.checkDownloadStatus = function () {
             if (_this.currentFilePiece.downloadCount >= _this.currentFilePiece.parts) {
-                if (_this.assemblyWorker === null) {
-                    _this.assemblyWorker = new AssemblyWorker().getWorker();
-                    _this.assemblyWorker.onmessage = _this.messageChannel;
-                    _this.assemblyWorker.postMessage({
-                        cmd: 'START',
-                        data: _this.currentFilePiece
-                    });
-                }
-                else {
-                    _this.assemblyWorker.postMessage({
-                        cmd: 'NEXT',
-                        data: _this.currentFilePiece
-                    });
-                }
+                _this.managerWorker.postMessage({
+                    cmd: 'ASSEMBLE_FILE',
+                    data: _this.currentFilePiece
+                });
+                // if (this.assemblyWorker === null) {
+                //   this.assemblyWorker = new AssemblyWorker().getWorker()
+                //   this.assemblyWorker.onmessage = this.messageChannel
+                //   this.assemblyWorker.postMessage({
+                //     cmd: 'START',
+                //     data: this.currentFilePiece,
+                //   })
+                // } else {
+                //   this.assemblyWorker.postMessage({
+                //     cmd: 'NEXT',
+                //     data: this.currentFilePiece,
+                //   })
+                // }
             }
         };
         this.start = function () {
