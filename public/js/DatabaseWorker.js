@@ -25,13 +25,11 @@ var DatabaseWorker = /** @class */ (function () {
                     case 'START':
                         databaseWorkerChannel = data.channel;
                         var req = indexedDB.open(data.filename, 1);
-                        console.log(req);
                         req.onupgradeneeded = function (e) {
                             db = e.target.result;
                             db.createObjectStore(data.filename);
                         };
                         req.onsuccess = function (e) {
-                            console.log(e);
                             db = e.target.result;
                             if (e.target.readyState === 'done') {
                                 data.channel.postMessage({
@@ -65,18 +63,18 @@ var DatabaseWorker = /** @class */ (function () {
                         fileStore.add(data, 'status');
                         break;
                     case 'REQUEST_FILE_PIECES':
-                        console.log('REQUEST');
                         fileStore = db
                             .transaction(data.filename, 'readonly')
                             .objectStore(data.filename);
                         fileStore.openCursor().onsuccess = function (e) {
-                            console.log('YO');
                             var cursor = e.target.result;
                             if (cursor) {
-                                databaseWorkerChannel.postMessage({
-                                    cmd: 'REQUESTED_FILE_PIECE',
-                                    data: cursor.value
-                                });
+                                if (cursor.key !== 'status') {
+                                    databaseWorkerChannel.postMessage({
+                                        cmd: 'REQUESTED_FILE_PIECE',
+                                        data: cursor.value
+                                    });
+                                }
                                 cursor["continue"]();
                             }
                             else {
@@ -108,7 +106,7 @@ var DatabaseWorker = /** @class */ (function () {
         this.init();
     }
     DatabaseWorker.prototype.log = function (message) {
-        // console.log(`<${new Date().toLocaleString()}> ${message}`)
+        console.log("<" + new Date().toLocaleString() + "> " + message);
     };
     DatabaseWorker.prototype.getWorker = function () {
         return this.worker;

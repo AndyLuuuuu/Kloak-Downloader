@@ -16,26 +16,23 @@ var AssemblyWorker = /** @class */ (function () {
             var assemblyWorkerChannel = null;
             var fileInformation = null;
             var assembledFile = null;
+            var log = function (message) {
+                console.log("<" + new Date().toLocaleString() + "> " + message);
+            };
             var messageChannel = function (e) {
                 var cmd = e.data.cmd;
                 var data = e.data.data;
                 switch (cmd) {
                     case 'DATABASE_READY':
-                        // assembledFile = new Uint8Array(fileInformation.size)
-                        // databaseWorker.worker.postMessage({
-                        //   cmd: 'REQUEST_FILE_PIECES',
-                        //   data: fileInformation,
-                        // })
+                        log(data.message);
                         break;
                     case 'REQUESTED_FILE_PIECE':
-                        console.log(data);
                         assembledFile.set(Buffer.from(data.data, 'base64'), data.offset);
                         break;
                     case 'REQUESTED_FILE_COMPLETE':
                         var file = new Blob([assembledFile.buffer], {
                             type: 'application/octet-stream'
                         });
-                        console.log(file);
                         var fileURL = URL.createObjectURL(file);
                         assemblyWorkerChannel.postMessage({
                             cmd: 'COMPLETE_FILE',

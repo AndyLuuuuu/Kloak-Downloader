@@ -14,7 +14,7 @@ class DatabaseWorker {
   }
 
   log(message: string) {
-    // console.log(`<${new Date().toLocaleString()}> ${message}`)
+    console.log(`<${new Date().toLocaleString()}> ${message}`)
   }
 
   getWorker(): Worker {
@@ -42,13 +42,11 @@ class DatabaseWorker {
         case 'START':
           databaseWorkerChannel = data.channel
           const req = indexedDB.open(data.filename, 1)
-          console.log(req)
           req.onupgradeneeded = (e) => {
             db = e.target.result
             db.createObjectStore(data.filename)
           }
           req.onsuccess = (e) => {
-            console.log(e)
             db = e.target.result
             if (e.target.readyState === 'done') {
               data.channel.postMessage({
@@ -82,18 +80,18 @@ class DatabaseWorker {
           fileStore.add(data, 'status')
           break
         case 'REQUEST_FILE_PIECES':
-          console.log('REQUEST')
           fileStore = db
             .transaction(data.filename, 'readonly')
             .objectStore(data.filename)
           fileStore.openCursor().onsuccess = (e) => {
-            console.log('YO')
             let cursor = e.target.result
             if (cursor) {
-              databaseWorkerChannel.postMessage({
-                cmd: 'REQUESTED_FILE_PIECE',
-                data: cursor.value,
-              })
+              if (cursor.key !== 'status') {
+                databaseWorkerChannel.postMessage({
+                  cmd: 'REQUESTED_FILE_PIECE',
+                  data: cursor.value,
+                })
+              }
               cursor.continue()
             } else {
               databaseWorkerChannel.postMessage({

@@ -18,6 +18,51 @@ var Downloader = /** @class */ (function () {
                 console.log(message);
             }
         };
+        this.createAssemblerScript = function () {
+            var platform = window.navigator.platform.toLowerCase();
+            switch (true) {
+                case platform.includes('windows'):
+                case platform.includes('win16'):
+                case platform.includes('win32'):
+                case platform.includes('wince'):
+                    return {
+                        scriptFile: [
+                            new Blob([
+                                "copy /b " + _this.currentFilePiece.filename + "-*.bin " + _this.currentFilePiece.filename + "." + _this.currentFilePiece.extension,
+                            ], { type: 'application/bat' }),
+                        ],
+                        scriptName: [_this.currentFilePiece.filename + "-assembler.bat"]
+                    };
+                case platform.includes('linux'):
+                    return {
+                        scriptFile: [
+                            new Blob([
+                                "#!/bin/bash\ncat " + _this.currentFilePiece.filename + "-*.bin > " + _this.currentFilePiece.filename + "." + _this.currentFilePiece.extension,
+                            ], {
+                                type: 'application/x-shellscript'
+                            }),
+                        ],
+                        scriptName: [_this.currentFilePiece.filename + "-assembler"]
+                    };
+                default:
+                    return {
+                        scriptFile: [
+                            new Blob([
+                                "copy /b " + _this.currentFilePiece.filename + "-*.bin " + _this.currentFilePiece.filename + "." + _this.currentFilePiece.extension,
+                            ], { type: 'application/bat' }),
+                            new Blob([
+                                "#!/bin/bash\ncat " + _this.currentFilePiece.filename + "-*.bin > " + _this.currentFilePiece.filename + "." + _this.currentFilePiece.extension,
+                            ], {
+                                type: 'application/x-shellscript'
+                            }),
+                        ],
+                        scriptName: [
+                            _this.currentFilePiece.filename + "-assembler.bat",
+                            _this.currentFilePiece.filename + "-assembler",
+                        ]
+                    };
+            }
+        };
         this.messageChannel = function (e) {
             var cmd = e.data.cmd;
             var data = e.data.data;
@@ -55,20 +100,15 @@ var Downloader = /** @class */ (function () {
                     }
                     break;
                 case 'COMPLETE_FILE':
-                    console.log('COMPLETE');
-                    var script = undefined;
+                    var scriptObject = undefined;
                     if (_this.filePieces.length <= 0) {
-                        script = new Blob([
-                            "#!/bin/bash\ncat " + _this.currentFilePiece.filename + "-*." + _this.currentFilePiece.extension + " > file." + _this.currentFilePiece.extension,
-                        ], {
-                            type: 'application/x-shellscript'
-                        });
+                        scriptObject = _this.createAssemblerScript();
                     }
                     _this.mainCallback({
                         cmd: 'COMPLETE_FILE',
                         data: {
                             url: data.url,
-                            script: script ? URL.createObjectURL(script) : null,
+                            script: scriptObject ? scriptObject : null,
                             filename: _this.currentFilePiece.filename,
                             filepiece: _this.currentFilePiece.filepiece
                         }
@@ -89,13 +129,13 @@ var Downloader = /** @class */ (function () {
         };
         this.setupFilePieces = function (file) {
             var filesize = file.size;
-            var createFilePiece = function () {
+            var createFilePiece = function (filesize) {
                 _this.filePieces.push({
                     filepiece: _this.filePieces.length,
                     filename: file.filename,
                     extension: file.extension,
-                    size: _this.MAX_FILE_SIZE,
-                    parts: Math.ceil(_this.MAX_FILE_SIZE / _this.chunksize),
+                    size: filesize,
+                    parts: Math.ceil(filesize / _this.chunksize),
                     chunksize: _this.chunksize,
                     downloadCount: 0,
                     startOffset: 0,
@@ -106,11 +146,11 @@ var Downloader = /** @class */ (function () {
                 });
             };
             while (filesize >= _this.MAX_FILE_SIZE) {
-                createFilePiece();
+                createFilePiece(_this.MAX_FILE_SIZE);
                 filesize -= _this.MAX_FILE_SIZE;
             }
             if (filesize < _this.MAX_FILE_SIZE) {
-                createFilePiece();
+                createFilePiece(filesize);
             }
         };
         this.fetchFileInformation = function (url) {

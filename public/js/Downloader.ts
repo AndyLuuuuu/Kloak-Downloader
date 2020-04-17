@@ -42,6 +42,64 @@ export default class Downloader {
     }
   }
 
+  createAssemblerScript = () => {
+    const platform = window.navigator.platform.toLowerCase()
+    switch (true) {
+      case platform.includes('windows'):
+      case platform.includes('win16'):
+      case platform.includes('win32'):
+      case platform.includes('wince'):
+        return {
+          scriptFile: [
+            new Blob(
+              [
+                `copy /b ${this.currentFilePiece.filename}-*.bin ${this.currentFilePiece.filename}.${this.currentFilePiece.extension}`,
+              ],
+              { type: 'application/bat' }
+            ),
+          ],
+          scriptName: [`${this.currentFilePiece.filename}-assembler.bat`],
+        }
+      case platform.includes('linux'):
+        return {
+          scriptFile: [
+            new Blob(
+              [
+                `#!/bin/bash\ncat ${this.currentFilePiece.filename}-*.bin > ${this.currentFilePiece.filename}.${this.currentFilePiece.extension}`,
+              ],
+              {
+                type: 'application/x-shellscript',
+              }
+            ),
+          ],
+          scriptName: [`${this.currentFilePiece.filename}-assembler`],
+        }
+      default:
+        return {
+          scriptFile: [
+            new Blob(
+              [
+                `copy /b ${this.currentFilePiece.filename}-*.bin ${this.currentFilePiece.filename}.${this.currentFilePiece.extension}`,
+              ],
+              { type: 'application/bat' }
+            ),
+            new Blob(
+              [
+                `#!/bin/bash\ncat ${this.currentFilePiece.filename}-*.bin > ${this.currentFilePiece.filename}.${this.currentFilePiece.extension}`,
+              ],
+              {
+                type: 'application/x-shellscript',
+              }
+            ),
+          ],
+          scriptName: [
+            `${this.currentFilePiece.filename}-assembler.bat`,
+            `${this.currentFilePiece.filename}-assembler`,
+          ],
+        }
+    }
+  }
+
   messageChannel = (e) => {
     const cmd = e.data.cmd
     const data = e.data.data
@@ -80,23 +138,18 @@ export default class Downloader {
         }
         break
       case 'COMPLETE_FILE':
-        console.log('COMPLETE')
-        let script: Blob = undefined
+        let scriptObject: {
+          scriptFile: Blob[]
+          scriptName: string[]
+        } = undefined
         if (this.filePieces.length <= 0) {
-          script = new Blob(
-            [
-              `#!/bin/bash\ncat ${this.currentFilePiece.filename}-*.${this.currentFilePiece.extension} > file.${this.currentFilePiece.extension}`,
-            ],
-            {
-              type: 'application/x-shellscript',
-            }
-          )
+          scriptObject = this.createAssemblerScript()
         }
         this.mainCallback({
           cmd: 'COMPLETE_FILE',
           data: {
             url: data.url,
-            script: script ? URL.createObjectURL(script) : null,
+            script: scriptObject ? scriptObject : null,
             filename: this.currentFilePiece.filename,
             filepiece: this.currentFilePiece.filepiece,
           },
@@ -117,13 +170,13 @@ export default class Downloader {
 
   setupFilePieces = (file) => {
     let filesize = file.size
-    const createFilePiece = () => {
+    const createFilePiece = (filesize: number) => {
       this.filePieces.push({
         filepiece: this.filePieces.length,
         filename: file.filename,
         extension: file.extension,
-        size: this.MAX_FILE_SIZE,
-        parts: Math.ceil(this.MAX_FILE_SIZE / this.chunksize),
+        size: filesize,
+        parts: Math.ceil(filesize / this.chunksize),
         chunksize: this.chunksize,
         downloadCount: 0,
         startOffset: 0,
@@ -134,13 +187,12 @@ export default class Downloader {
         mimetype: this.file.mimetype,
       })
     }
-
     while (filesize >= this.MAX_FILE_SIZE) {
-      createFilePiece()
+      createFilePiece(this.MAX_FILE_SIZE)
       filesize -= this.MAX_FILE_SIZE
     }
     if (filesize < this.MAX_FILE_SIZE) {
-      createFilePiece()
+      createFilePiece(filesize)
     }
   }
 

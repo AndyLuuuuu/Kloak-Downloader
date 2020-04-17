@@ -33,26 +33,24 @@ class AssemblyWorker {
     let fileInformation: filePiece = null
     let assembledFile = null
 
+    const log = (message: string) => {
+      console.log(`<${new Date().toLocaleString()}> ${message}`)
+    }
+
     const messageChannel = (e) => {
       const cmd = e.data.cmd
       const data = e.data.data
       switch (cmd) {
         case 'DATABASE_READY':
-          // assembledFile = new Uint8Array(fileInformation.size)
-          // databaseWorker.worker.postMessage({
-          //   cmd: 'REQUEST_FILE_PIECES',
-          //   data: fileInformation,
-          // })
+          log(data.message)
           break
         case 'REQUESTED_FILE_PIECE':
-          console.log(data)
           assembledFile.set(Buffer.from(data.data, 'base64'), data.offset)
           break
         case 'REQUESTED_FILE_COMPLETE':
           const file = new Blob([assembledFile.buffer], {
             type: 'application/octet-stream',
           })
-          console.log(file)
           const fileURL = URL.createObjectURL(file)
           assemblyWorkerChannel.postMessage({
             cmd: 'COMPLETE_FILE',

@@ -8,7 +8,6 @@ const hiddendl = document.getElementById('hiddendl')
 const files = document.querySelectorAll('.item')
 const downloads = []
 const videoSegments = []
-let hasInit = false
 console.log(files)
 
 const log = (message: string) => {
@@ -39,14 +38,15 @@ const callback = async (e) => {
       })
       break
     case 'COMPLETE_FILE':
-      console.log(data)
       hiddendl.href = data.url
-      hiddendl.download = `${data.filename}-${data.filepiece}`
+      hiddendl.download = `${data.filename}-${data.filepiece}.bin`
       hiddendl.click()
       if (data.script) {
-        hiddendl.href = data.script
-        hiddendl.download = `${data.filename}-assembler`
-        hiddendl.click()
+        data.script.scriptFile.map((file, idx) => {
+          hiddendl.href = URL.createObjectURL(file)
+          hiddendl.download = data.script.scriptName[idx]
+          hiddendl.click()
+        })
       }
     default:
       break
